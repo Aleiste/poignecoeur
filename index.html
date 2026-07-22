@@ -180,8 +180,14 @@
   .pclose{position:absolute;top:14px;right:14px;z-index:3;width:40px;height:40px;border-radius:50%;
     border:0;background:rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.15);font-size:18px;cursor:pointer}
   .pscroll{flex:1;overflow-y:auto;padding:18px 18px 4px;display:flex;flex-direction:column;align-items:center}
-  .pimg{height:56vh;max-height:520px;aspect-ratio:2/5;border-radius:20px;background-repeat:no-repeat;
-    background-size:500% 400%;box-shadow:var(--shadow);flex:none}
+  .pgallery{display:flex;justify-content:center;width:100%}
+  .pframe{position:relative;height:56vh;max-height:520px;border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
+  .pimg{height:100%;background-repeat:no-repeat;background-position:center}
+  .pseg{position:absolute;top:8px;left:8px;right:8px;z-index:4;display:flex;gap:5px}
+  .pseg span{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.5)}
+  .pseg span.on{background:#fff}
+  .ptap{position:absolute;top:0;bottom:0;width:45%;z-index:3;cursor:pointer}
+  .ptap.left{left:0} .ptap.right{right:0}
   .pinfo{width:100%;margin-top:16px}
   .pname{font-size:26px;font-weight:900}
   .pname small{font-weight:600;color:var(--muted);font-size:17px}
@@ -189,6 +195,15 @@
   .pinfo .chip.morpho{background:var(--pink);color:#fff}
   .pbio{color:var(--muted);font-size:15px;line-height:1.45;margin-top:6px}
   .pactions{display:flex;justify-content:center;gap:24px;padding:12px 0 16px}
+
+  /* upload / edition profil */
+  #editprofile .escroll{flex:1;overflow-y:auto;padding-right:2px}
+  .thumbs{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+  .mythumb{width:66px;height:66px;border-radius:12px;background-size:cover;background-position:center;
+    position:relative;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+  .mythumb .rm{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;
+    background:var(--bad);color:#fff;font-size:11px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+  .mythumb.main::after{content:'★';position:absolute;bottom:2px;left:4px;color:#ffd400;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 
   .hidden{display:none!important}
 </style>
@@ -278,8 +293,11 @@
     <div class="spacer" style="max-height:20px"></div>
     <h2 class="step">La touche finale ✨</h2>
     <p class="sub">Étape 3 sur 3</p>
-    <label class="f">Choisis ton avatar</label>
+    <label class="f">Choisis un avatar…</label>
     <div class="seg" id="f-avatar" style="flex-wrap:wrap"></div>
+    <div style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px">— ou —</div>
+    <button class="btn btn-ghost" onclick="addMyPhotos('onbThumbs')">📷 Importer mes vraies photos</button>
+    <div class="thumbs" id="onbThumbs"></div>
     <label class="f">Ta petite phrase</label>
     <input type="text" id="f-bio" placeholder="Ex : Cherche la main qui me correspond 🖐️" maxlength="60">
     <div class="spacer"></div>
@@ -294,6 +312,7 @@
     <div class="topbar">
       <span class="brand">PoigneCœuR</span>
       <div class="right">
+        <button class="iconbtn" onclick="openEdit()" title="Mon profil">👤</button>
         <button class="iconbtn" onclick="openMatches()" title="Mes matchs">💞<span class="count hidden" id="mcount">0</span></button>
         <button class="iconbtn" onclick="toggleSound()" id="soundBtn" title="Son">🔊</button>
         <button class="iconbtn" onclick="resetAll()" title="Recommencer">🔄</button>
@@ -315,6 +334,27 @@
       <button class="iconbtn" onclick="go('swipe')" title="Retour">✖️</button>
     </div>
     <div class="mlist" id="mlist"></div>
+  </section>
+
+  <!-- MON PROFIL (edition) -->
+  <section id="editprofile" class="screen">
+    <div class="topbar">
+      <span class="brand">Mon profil ✨</span>
+      <button class="iconbtn" onclick="go('swipe')" title="Fermer">✕</button>
+    </div>
+    <div class="escroll">
+      <label class="f">Mes photos <span style="color:var(--muted);font-weight:500">(la 1ʳᵉ = principale)</span></label>
+      <div class="thumbs" id="editThumbs"></div>
+      <button class="btn btn-ghost" onclick="addMyPhotos('editThumbs')">📷 Ajouter mes photos</button>
+      <label class="f">Prénom</label>
+      <input type="text" id="e-name" maxlength="20">
+      <label class="f">Âge</label>
+      <input type="number" id="e-age" min="18" max="99">
+      <label class="f">Ma petite phrase</label>
+      <input type="text" id="e-bio" maxlength="60">
+      <div id="e-morph"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="saveEdit()">Enregistrer 💾</button>
   </section>
 
   <!-- CHAT -->
@@ -348,7 +388,14 @@
   <div id="profile">
     <button class="pclose" onclick="closeProfile()">✕</button>
     <div class="pscroll">
-      <div class="pimg" id="p-img"></div>
+      <div class="pgallery">
+        <div class="pframe">
+          <div class="pimg" id="p-img"></div>
+          <div class="pseg" id="p-seg"></div>
+          <div class="ptap left" onclick="galleryPrev()"></div>
+          <div class="ptap right" onclick="galleryNext()"></div>
+        </div>
+      </div>
       <div class="pinfo">
         <div class="pname" id="p-name"></div>
         <div class="chips" id="p-chips"></div>
@@ -363,6 +410,7 @@
   </div>
 
   <div id="toast"></div>
+  <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
 
 </div>
 
@@ -370,9 +418,10 @@
 /* ================= STATE ================= */
 const AVATARS_H=['👨','🧔','👱‍♂️','👨‍🦰','👨‍🦱','👨‍🦳','🧑','👨‍🎤'];
 const AVATARS_F=['👩','👱‍♀️','👩‍🦰','👩‍🦱','👩‍🦳','🧑‍🦰','👩‍🎤','💁‍♀️'];
-let me={name:'',age:'',gender:'',hand:19,cup:'',avatar:'',bio:''};
+let me={name:'',age:'',gender:'',hand:19,cup:'',avatar:'',bio:'',photos:[]};
 let deck=[],idx=0,matches=[],lastSwipe=null,soundOn=true;
 let chats={},currentChat=null,unlocked={};
+let profPhotos=[],profGalleryIdx=0;
 let stats={likes:0,nopes:0,supers:0,matches:0,best:0};
 
 /* ================= STORAGE ================= */
@@ -388,6 +437,7 @@ function loadState(){
     const p=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
     if(p&&p.name&&p.gender){me=p; document.getElementById('resumeBtn').classList.remove('hidden');}
     if(me&&(typeof me.avatar!=='object'||me.avatar===null)) me.avatar={g:me.gender||'H',i:0};
+    if(me&&!Array.isArray(me.photos)) me.photos=[];
     const m=JSON.parse(localStorage.getItem(M_KEY)||'[]'); if(Array.isArray(m))matches=m;
     matches.forEach((x,i)=>{if(!x.id)x.id='old-'+i+'-'+(x.when||i);});   // rétro-compat
     const c=JSON.parse(localStorage.getItem(C_KEY)||'{}'); if(c&&typeof c==='object')chats=c;
@@ -608,9 +658,23 @@ function refreshBtns(){ document.getElementById('rewindBtn').disabled=!lastSwipe
 
 /* ================= FICHE PROFIL (full-body) ================= */
 let profileP=null;
+function profilePhotosOf(p){
+  if(p.photos&&p.photos.length) return p.photos.map(u=>({url:u}));
+  return [{g:p.ava.g,i:p.ava.i,full:false},{g:p.ava.g,i:p.ava.i,full:true}]; // portrait + full-body
+}
+function renderGallery(){
+  const ph=profPhotos[profGalleryIdx]||{}, img=document.getElementById('p-img');
+  if(ph.url){ img.setAttribute('style','aspect-ratio:3/4;background-image:url('+ph.url+');background-size:cover;background-position:center'); }
+  else { img.setAttribute('style', avaStyle(ph.g,ph.i,ph.full)+';aspect-ratio:'+(ph.full?'2/5':'4/5')); }
+  const seg=document.getElementById('p-seg'); seg.innerHTML='';
+  profPhotos.forEach((_,k)=>{const s=document.createElement('span'); if(k===profGalleryIdx)s.className='on'; seg.appendChild(s);});
+}
+function galleryNext(){ if(profGalleryIdx<profPhotos.length-1){profGalleryIdx++; renderGallery(); blip(600,.03);} }
+function galleryPrev(){ if(profGalleryIdx>0){profGalleryIdx--; renderGallery(); blip(600,.03);} }
+
 function openProfile(p){
   if(!p)return; profileP=p;
-  document.getElementById('p-img').setAttribute('style',avaStyle(p.ava.g,p.ava.i,true));
+  profPhotos=profilePhotosOf(p); profGalleryIdx=0; renderGallery();
   const morpho=p.cup?('Bonnet '+p.cup):(p.hand+' cm de main');
   document.getElementById('p-name').innerHTML=p.name+' <small>'+p.age+' ans</small>';
   document.getElementById('p-chips').innerHTML='<span class="chip morpho">📐 '+morpho+'</span>'+
@@ -622,6 +686,83 @@ function openProfile(p){
 function closeProfile(){document.getElementById('profile').classList.remove('show');}
 function profileSwipe(liked){closeProfile(); btnSwipe(liked);}
 function profileScore(){ if(profileP) showMatch(profileP, compat(profileP), true); }
+
+/* ================= UPLOAD / EDITION PROFIL ================= */
+function myAvaHTML(cls){
+  if(me.photos&&me.photos.length)
+    return '<div class="ava '+(cls||'')+'" style="background-image:url('+me.photos[0]+');background-size:cover;background-position:center"></div>';
+  const a=me.avatar&&typeof me.avatar==='object'?me.avatar:{g:me.gender||'H',i:0};
+  return avaHTML(a.g,a.i,cls);
+}
+function downscale(dataUrl,max,q,cb){
+  const img=new Image();
+  img.onload=()=>{ let w=img.width,h=img.height;
+    if(w>max||h>max){ if(w>=h){h=Math.round(h*max/w);w=max;} else {w=Math.round(w*max/h);h=max;} }
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    try{cb(cv.toDataURL('image/jpeg',q));}catch(e){cb(dataUrl);}
+  };
+  img.onerror=()=>cb(dataUrl); img.src=dataUrl;
+}
+function addMyPhotos(containerId){
+  const inp=document.getElementById('photoInput');
+  inp.onchange=()=>{
+    const files=[...inp.files].slice(0,6); if(!files.length)return;
+    let done=0, add=[];
+    files.forEach(f=>{
+      const r=new FileReader();
+      r.onload=e=>downscale(e.target.result,900,.82,url=>{
+        add.push(url);
+        if(++done===files.length){
+          me.photos=(me.photos||[]).concat(add).slice(0,6); saveProfile();
+          renderMyThumbs(containerId); toast('📷 '+add.length+' photo(s) ajoutée(s) !');
+        }
+      });
+      r.readAsDataURL(f);
+    });
+    inp.value='';
+  };
+  inp.click();
+}
+function renderMyThumbs(containerId){
+  const box=document.getElementById(containerId); if(!box)return; box.innerHTML='';
+  (me.photos||[]).forEach((u,k)=>{
+    const d=document.createElement('div'); d.className='mythumb'+(k===0?' main':''); d.style.backgroundImage='url('+u+')';
+    const x=document.createElement('button'); x.className='rm'; x.textContent='✕';
+    x.onclick=(ev)=>{ev.stopPropagation(); me.photos.splice(k,1); saveProfile(); renderMyThumbs(containerId);};
+    d.onclick=()=>{ if(k>0){const p=me.photos.splice(k,1)[0]; me.photos.unshift(p); saveProfile(); renderMyThumbs(containerId);} }; // clic = définir principale
+    d.appendChild(x); box.appendChild(d);
+  });
+}
+function buildEditMorph(){
+  const box=document.getElementById('e-morph');
+  if(me.gender==='H'){
+    box.innerHTML='<label class="f">Longueur de main : <b id="e-handval">'+me.hand+'</b> cm</label>'+
+      '<input type="range" min="15" max="24" step="0.5" value="'+me.hand+'" '+
+      'oninput="me.hand=parseFloat(this.value);document.getElementById(\'e-handval\').textContent=me.hand">';
+  } else {
+    box.innerHTML='<label class="f">Bonnet</label><div class="grid-cup" id="e-cup"></div>';
+    const g=document.getElementById('e-cup');
+    ['A','B','C','D','E','F','G','+'].forEach(c=>{
+      const d=document.createElement('div'); d.className='opt'+(me.cup===c?' sel':''); d.textContent=(c==='+'?'G+':c);
+      d.onclick=()=>{g.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); me.cup=c; blip(680,.04);};
+      g.appendChild(d);
+    });
+  }
+}
+function openEdit(){
+  document.getElementById('e-name').value=me.name||'';
+  document.getElementById('e-age').value=me.age||'';
+  document.getElementById('e-bio').value=me.bio||'';
+  buildEditMorph(); renderMyThumbs('editThumbs'); blip(660,.05); go('editprofile');
+}
+function saveEdit(){
+  const n=document.getElementById('e-name').value.trim();
+  if(n)me.name=n;
+  me.age=document.getElementById('e-age').value||me.age;
+  me.bio=document.getElementById('e-bio').value.trim();
+  saveProfile(); toast('✅ Profil enregistré !'); go('swipe');
+}
 
 /* ================= MATCH ================= */
 function maybeMatch(p,sup){
@@ -643,7 +784,7 @@ function updateMatchCount(){
 }
 function showMatch(p,score,preview){
   const el=document.getElementById('match');
-  document.getElementById('matchfaces').innerHTML=avaHTML(me.avatar.g,me.avatar.i,'round')+avaHTML(p.ava.g,p.ava.i,'round');
+  document.getElementById('matchfaces').innerHTML=myAvaHTML('round')+avaHTML(p.ava.g,p.ava.i,'round');
   const sn=document.getElementById('matchscore'); sn.className='scorenum '+scoreClass(score);
   animateScore(sn,score);
   document.getElementById('matchmsg').textContent=scoreMsg(score);
@@ -694,14 +835,46 @@ const OPEN_HI=['Alors comme ça nos mensurations sont faites l\'une pour l\'autr
 const OPEN_LO=['Bon, l\'algo est sceptique mais moi je tente ma chance 😅',
   'On va prouver à la science qu\'elle a tort, non ? 🤨',
   'Score moyen mais grand cœur, on papote ? 💬'];
-const BOT=['Haha t\'es sérieux ? 😂','J\'aime bien ton énergie 👀','Raconte-moi tout 🍿',
-  'Team pizza ananas toi aussi j\'espère ? 🍍','Tu ouvres les bocaux au moins ? 🫙',
-  'Mdr arrête tu vas me faire rougir 🙈','On se capte pour un kebab alors ? 🌯',
-  'La compatibilité morphologique ça ne s\'invente pas 📐','Attends je remesure ta main… je rigole 😇',
-  'Trop mignon·ne 🥹','Prouve-moi que t\'es pas un bot 🤖','Ok mais qui régale au resto ? 😏',
-  'Mon chat doit valider avant, envoie une photo 🐱','J\'avoue t\'as du répondant 🔥'];
 function opener(s){return rnd(s>=70?OPEN_HI:OPEN_LO);}
-function botReply(){return rnd(BOT);}
+
+/* Chat "intelligent" hors-ligne : détection d'intention par mots-clés + réponses contextuelles */
+const INTENTS=[
+  {k:["salut","bonjour","coucou","hello","hey","cc","bonsoir","yo"],
+   r:n=>["Coucou "+n+" ! 😄 Contente que tu m'écrives","Hey "+n+" 👋 ça roule ?","Salut toi 🙃 j'attendais ton message"]},
+  {k:["ça va","ca va","comment vas","comment tu vas","cv","la forme","quoi de neuf","tu vas bien"],
+   r:n=>["Au top et toi ? 😊","Ça va mieux depuis que tu m'écris 🥹 et toi ?","Nickel ! J'espérais que tu me parles 😌"]},
+  {k:["belle","beau","jolie","joli","mignon","mignonne","canon","magnifique","sublime","charmant","craquant"],
+   r:n=>["Arrête tu vas me faire rougir 🙈","Toi aussi tu déchires hein 😏","Merci 🥰 tu marques des points là"]},
+  {k:["resto","restaurant","manger","kebab","pizza","sushi","burger","boire","verre","café","cafe","apéro","apero","diner","dîner","brunch","boisson"],
+   r:n=>["Un resto avec toi ? Je dis oui direct 😍 tu proposes quoi ?","Kebab premier date, on est d'accord 🌯🔥","Carrément, mais c'est toi qui régales 😜"]},
+  {k:["rencontrer","se voir","se rencontrer","rdv","rendez","dispo","ce soir","demain","weekend","week-end","samedi","dimanche","on se capte","on se voit"],
+   r:n=>["Je suis dispo ce week-end 📅 ça te va ?","Ça me tente grave, tu penses à quoi ? 😍","Oui ! Mais tu payes le premier verre 😜"]},
+  {k:["main","bonnet","taille","mesure","morpho","compatib","score","paume"],
+   r:n=>["La science nous a réunis, on ne discute pas 🔬❤️","Mdr t'es obsédé·e par les mensurations toi 😆","Notre compatibilité morphologique parle d'elle-même 📐"]},
+  {k:["photo","tof","selfie","instagram","insta","snap","tiktok"],
+   r:n=>["Mes photos parlent déjà pour moi non ? 💁","Instagram après le 3e date, patience 😌","Envoie la tienne d'abord 😏📸"]},
+  {k:["amour","mariage","marier","enfant","enfants","bébé","bebe","avenir","couple","relation"],
+   r:n=>["Doucement, on se marie au 2e message ? 😂","J'ai déjà choisi le prénom des enfants 👶😅","Team grand amour ou rien 💍"]},
+  {k:["bot","robot"," ia ","intelligence","artificiel","vrai","réel","reel","fake","faux"],
+   r:n=>["Un bot ? Comment oses-tu 😤","Je suis 100% humaine… enfin je crois 🤖😂","Pince-moi si je suis un robot 🤏"]},
+  {k:["travail","boulot","job","métier","metier","études","etudes","fais dans la vie","tu fais quoi"],
+   r:n=>["Je bosse mais je préfère parler de nous 😏","Assez pour t'inviter au resto 💼😄 et toi ?","Question sérieuse dès le début, j'aime 👀 je te dirai autour d'un verre"]},
+  {k:["chien","chat","animal","animaux"],
+   r:n=>["Team chat évidemment 🐱 (mais je tolère les chiens)","Mon animal doit te valider avant tout 🐶","Un animal ? On est déjà d'accord sur l'essentiel 🥰"]},
+  {k:["bye","ciao","à plus","a plus","bonne nuit","au revoir","++","a+","bonne journée"],
+   r:n=>["Déjà ? Reviens vite 🥺","Ciao 😘 pense à moi","À très vite j'espère 💕"]},
+  {k:["mdr","ptdr","lol","haha","hihi","🤣","😂"],
+   r:n=>["Contente de te faire rire 😄","Je suis là toute la semaine 🎤","T'as l'air marrant·e, j'aime ça 🔥"]}
+];
+const FALLBACK=["Trop bien 😄 raconte-moi en plus 🍿","Ah ouais ? 😲 développe !","J'aime bien discuter avec toi 👀",
+  "Et sinon, tu fais quoi de beau ? 😌","Team plutôt chien ou chat ? 🐱🐶","Continue, ça m'intéresse 😊",
+  "Tu m'as l'air quelqu'un de bien 🥰","Dis-m'en plus, je suis curieuse 🤭","Intéressant… et à part ça ? 😏"];
+function botReply(text,m){
+  const t=" "+(text||"").toLowerCase()+" ", n=me.name||"toi";
+  for(const it of INTENTS){ if(it.k.some(w=>t.includes(w))) return rnd(it.r(n)); }
+  if(t.includes("?")) return rnd(["Bonne question 🤔 à toi de deviner 😏","Hmm peut-être bien 😌 et toi, t'en penses quoi ?","Je te répondrai autour d'un verre 🍷"]);
+  return rnd(FALLBACK);
+}
 
 function openChat(id){
   const m=matches.find(x=>x.id===id); if(!m)return;
@@ -727,13 +900,14 @@ function sendMsg(){
   const l=document.getElementById('clist');
   const typ=document.createElement('div'); typ.className='typing'; typ.textContent='✍️ en train d\'écrire…';
   l.appendChild(typ); l.scrollTop=l.scrollHeight;
-  const cid=currentChat;
+  const cid=currentChat, reply=botReply(t, matches.find(x=>x.id===cid));
+  const delay=Math.min(2200, 650+reply.length*22);
   setTimeout(()=>{
     typ.remove();
-    pushMsg(cid,false,botReply()); saveChats();
+    pushMsg(cid,false,reply); saveChats();
     if(currentChat===cid) renderChat();
     blip(680,.06,'triangle'); buzz(15);
-  },900+Math.random()*900);
+  },delay);
 }
 
 /* ================= BADGES / NOTIFS ================= */
