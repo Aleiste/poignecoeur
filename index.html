@@ -137,6 +137,30 @@
   .confetti{position:absolute;top:-10px;font-size:20px;animation:fall linear forwards;pointer-events:none}
   @keyframes fall{to{transform:translateY(900px) rotate(540deg);opacity:0}}
 
+  /* chat */
+  #chat{padding:0}
+  #chat .topbar{padding:16px 16px 8px;margin:0}
+  #chat .brand{font-size:18px}
+  .clist{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+  .msg{max-width:78%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.35;word-wrap:break-word;animation:fade .2s}
+  .msg.them{background:#fff;color:var(--ink);align-self:flex-start;border-bottom-left-radius:5px;box-shadow:0 3px 10px rgba(0,0,0,.06)}
+  .msg.me{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+  .typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:4px 12px}
+  .cbar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #f0e2ec;background:#fff}
+  .cbar input{flex:1;padding:12px 14px;border:2px solid #f0e2ec;border-radius:22px;font-size:15px}
+  .cbar input:focus{outline:0;border-color:var(--pink)}
+  .csend{border:0;background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;width:46px;height:46px;border-radius:50%;font-size:18px;cursor:pointer;flex:0 0 auto}
+  .mrow{cursor:pointer;transition:transform .12s}
+  .mrow:active{transform:scale(.98)}
+  .mrow .go{color:var(--muted);font-size:20px;margin-left:2px}
+  /* toast / badges */
+  #toast{position:absolute;top:14px;left:0;right:0;z-index:40;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:#fff;padding:11px 18px;border-radius:30px;font-weight:800;font-size:13px;
+    box-shadow:0 10px 24px rgba(0,0,0,.28);max-width:88%;text-align:center;
+    animation:toastIn .3s ease, toastOut .35s ease 2.5s forwards}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(-14px)}}
+
   .hidden{display:none!important}
 </style>
 </head>
@@ -264,6 +288,21 @@
     <div class="mlist" id="mlist"></div>
   </section>
 
+  <!-- CHAT -->
+  <section id="chat" class="screen">
+    <div class="topbar">
+      <button class="iconbtn" onclick="openMatches()" title="Retour">←</button>
+      <span class="brand" id="chat-name">…</span>
+      <span class="iconbtn" id="chat-av" style="cursor:default">👤</span>
+    </div>
+    <div class="clist" id="clist"></div>
+    <div class="cbar">
+      <input type="text" id="cinput" placeholder="Écris un message…" maxlength="200"
+             onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="csend" onclick="sendMsg()">➤</button>
+    </div>
+  </section>
+
   <!-- MATCH MODAL -->
   <div id="match">
     <h1>C'est un MATCH !</h1>
@@ -276,6 +315,8 @@
     <button class="btn btn-primary" onclick="closeMatch()">Continuer à swiper 🔥</button>
   </div>
 
+  <div id="toast"></div>
+
 </div>
 
 <script>
@@ -284,16 +325,26 @@ const AVATARS_H=['👨','🧔','👱‍♂️','👨‍🦰','👨‍🦱','👨
 const AVATARS_F=['👩','👱‍♀️','👩‍🦰','👩‍🦱','👩‍🦳','🧑‍🦰','👩‍🎤','💁‍♀️'];
 let me={name:'',age:'',gender:'',hand:19,cup:'',avatar:'',bio:''};
 let deck=[],idx=0,matches=[],lastSwipe=null,soundOn=true;
+let chats={},currentChat=null,unlocked={};
+let stats={likes:0,nopes:0,supers:0,matches:0,best:0};
 
 /* ================= STORAGE ================= */
-const SAVE_KEY='poignecoeur.profile', M_KEY='poignecoeur.matches';
+const SAVE_KEY='poignecoeur.profile', M_KEY='poignecoeur.matches',
+      C_KEY='poignecoeur.chats', S_KEY='poignecoeur.stats', B_KEY='poignecoeur.badges';
 function saveProfile(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(me))}catch(e){}}
 function saveMatches(){try{localStorage.setItem(M_KEY,JSON.stringify(matches))}catch(e){}}
+function saveChats(){try{localStorage.setItem(C_KEY,JSON.stringify(chats))}catch(e){}}
+function saveStats(){try{localStorage.setItem(S_KEY,JSON.stringify(stats))}catch(e){}}
+function saveBadges(){try{localStorage.setItem(B_KEY,JSON.stringify(unlocked))}catch(e){}}
 function loadState(){
   try{
     const p=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
     if(p&&p.name&&p.gender){me=p; document.getElementById('resumeBtn').classList.remove('hidden');}
     const m=JSON.parse(localStorage.getItem(M_KEY)||'[]'); if(Array.isArray(m))matches=m;
+    matches.forEach((x,i)=>{if(!x.id)x.id='old-'+i+'-'+(x.when||i);});   // rétro-compat
+    const c=JSON.parse(localStorage.getItem(C_KEY)||'{}'); if(c&&typeof c==='object')chats=c;
+    const s=JSON.parse(localStorage.getItem(S_KEY)||'null'); if(s&&typeof s==='object')stats=Object.assign(stats,s);
+    const b=JSON.parse(localStorage.getItem(B_KEY)||'{}'); if(b&&typeof b==='object')unlocked=b;
   }catch(e){}
 }
 
@@ -475,6 +526,7 @@ function fly(card,liked,sup){
   card.style.transform='translate('+(liked?600:-600)+'px,60px) rotate('+(liked?45:-45)+'deg)'; card.style.opacity=0;
   const p=deck[idx];
   blip(liked?520:200,.08,liked?'sine':'sawtooth'); buzz(liked?20:12);
+  if(liked)stats.likes++; else stats.nopes++; saveStats(); checkBadges();
   lastSwipe={idx,liked,card:null}; refreshBtns();
   setTimeout(()=>{ idx++; renderDeck(); refreshBtns(); if(liked) maybeMatch(p,sup); },220);
 }
@@ -486,7 +538,7 @@ function btnSwipe(liked){
 function superLike(){
   if(idx>=deck.length)return;
   const top=document.querySelector('#deck-wrap .card:last-child');
-  if(top){const s=top.querySelector('.badge.star'); if(s)s.style.opacity=1; top.style.transition='transform .4s ease, opacity .4s'; blip(880,.12,'triangle'); fly(top,true,true);}
+  if(top){const s=top.querySelector('.badge.star'); if(s)s.style.opacity=1; top.style.transition='transform .4s ease, opacity .4s'; blip(880,.12,'triangle'); stats.supers++; saveStats(); fly(top,true,true);}
 }
 function rewind(){
   if(!lastSwipe||idx===0)return;
@@ -502,9 +554,11 @@ function maybeMatch(p,sup){
   }
 }
 function registerMatch(p,s){
-  matches.unshift({name:p.name,avatar:p.avatar,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
+  const id=Date.now()+'-'+Math.floor(Math.random()*1000);
+  matches.unshift({id:id,name:p.name,avatar:p.avatar,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
   if(matches.length>50)matches.pop();
-  saveMatches(); updateMatchCount();
+  stats.matches++; stats.best=Math.max(stats.best,s); saveStats();
+  saveMatches(); updateMatchCount(); checkBadges();
 }
 function updateMatchCount(){
   const b=document.getElementById('mcount');
@@ -513,7 +567,8 @@ function updateMatchCount(){
 function showMatch(p,score,preview){
   const el=document.getElementById('match');
   document.getElementById('matchfaces').textContent=me.avatar+' '+p.avatar;
-  const sn=document.getElementById('matchscore'); sn.textContent=score+'%'; sn.className='scorenum '+scoreClass(score);
+  const sn=document.getElementById('matchscore'); sn.className='scorenum '+scoreClass(score);
+  animateScore(sn,score);
   document.getElementById('matchmsg').textContent=scoreMsg(score);
   el.querySelector('h1').textContent=preview?'Analyse 📊':'C\'est un MATCH !';
   el.classList.add('show');
@@ -538,19 +593,94 @@ function openMatches(){
   }else{
     matches.forEach(m=>{
       const d=document.createElement('div'); d.className='mrow';
-      d.innerHTML='<div class="av">'+m.avatar+'</div><div class="mid"><b>'+m.name+'</b><div>📐 '+m.morpho+'</div></div>'+
-        '<div class="sc '+scoreClass(m.score)+'" style="color:'+(m.score>=80?'var(--ok)':m.score>=55?'#e0a800':'var(--bad)')+'">'+m.score+'%</div>';
+      const nb=(chats[m.id]&&chats[m.id].length)?' 💬':'';
+      d.innerHTML='<div class="av">'+m.avatar+'</div><div class="mid"><b>'+m.name+'</b><div>📐 '+m.morpho+nb+'</div></div>'+
+        '<div class="sc" style="color:'+(m.score>=80?'var(--ok)':m.score>=55?'#e0a800':'var(--bad)')+'">'+m.score+'%</div>'+
+        '<div class="go">›</div>';
+      d.onclick=()=>openChat(m.id);
       l.appendChild(d);
     });
   }
   blip(660,.05); go('matches');
 }
 
+function animateScore(el,target){
+  let cur=0; const step=Math.max(1,Math.round(target/24)); el.textContent='0%';
+  const iv=setInterval(()=>{cur+=step; if(cur>=target){cur=target;clearInterval(iv);} el.textContent=cur+'%';},28);
+}
+
+/* ================= CHAT (messagerie bidon) ================= */
+const OPEN_HI=['Alors comme ça nos mensurations sont faites l\'une pour l\'autre ? 😏',
+  'J\'ai vu notre score, on peut déjà réserver la salle des fêtes 💒',
+  'La science a parlé, on n\'a pas le droit de résister 🔬❤️'];
+const OPEN_LO=['Bon, l\'algo est sceptique mais moi je tente ma chance 😅',
+  'On va prouver à la science qu\'elle a tort, non ? 🤨',
+  'Score moyen mais grand cœur, on papote ? 💬'];
+const BOT=['Haha t\'es sérieux ? 😂','J\'aime bien ton énergie 👀','Raconte-moi tout 🍿',
+  'Team pizza ananas toi aussi j\'espère ? 🍍','Tu ouvres les bocaux au moins ? 🫙',
+  'Mdr arrête tu vas me faire rougir 🙈','On se capte pour un kebab alors ? 🌯',
+  'La compatibilité morphologique ça ne s\'invente pas 📐','Attends je remesure ta main… je rigole 😇',
+  'Trop mignon·ne 🥹','Prouve-moi que t\'es pas un bot 🤖','Ok mais qui régale au resto ? 😏',
+  'Mon chat doit valider avant, envoie une photo 🐱','J\'avoue t\'as du répondant 🔥'];
+function opener(s){return rnd(s>=70?OPEN_HI:OPEN_LO);}
+function botReply(){return rnd(BOT);}
+
+function openChat(id){
+  const m=matches.find(x=>x.id===id); if(!m)return;
+  currentChat=id;
+  document.getElementById('chat-name').textContent=m.name;
+  document.getElementById('chat-av').textContent=m.avatar;
+  if(!chats[id]||!chats[id].length){chats[id]=[]; pushMsg(id,false,opener(m.score)); saveChats();}
+  renderChat(); blip(660,.05); go('chat');
+  setTimeout(()=>document.getElementById('cinput').focus(),150);
+}
+function pushMsg(id,mine,text){(chats[id]=chats[id]||[]).push({me:mine,text:text,t:Date.now()});}
+function renderChat(){
+  const l=document.getElementById('clist'); l.innerHTML='';
+  (chats[currentChat]||[]).forEach(msg=>{
+    const d=document.createElement('div'); d.className='msg '+(msg.me?'me':'them'); d.textContent=msg.text; l.appendChild(d);
+  });
+  l.scrollTop=l.scrollHeight;
+}
+function sendMsg(){
+  const inp=document.getElementById('cinput'); const t=inp.value.trim(); if(!t||!currentChat)return;
+  pushMsg(currentChat,true,t); inp.value=''; saveChats(); renderChat(); blip(520,.05);
+  const l=document.getElementById('clist');
+  const typ=document.createElement('div'); typ.className='typing'; typ.textContent='✍️ en train d\'écrire…';
+  l.appendChild(typ); l.scrollTop=l.scrollHeight;
+  const cid=currentChat;
+  setTimeout(()=>{
+    typ.remove();
+    pushMsg(cid,false,botReply()); saveChats();
+    if(currentChat===cid) renderChat();
+    blip(680,.06,'triangle'); buzz(15);
+  },900+Math.random()*900);
+}
+
+/* ================= BADGES / NOTIFS ================= */
+const BADGES=[
+  {id:'first', cond:()=>stats.matches>=1,  txt:'🏅 Premier match débloqué !'},
+  {id:'five',  cond:()=>stats.matches>=5,  txt:'🏆 5 matchs — vrai·e tombeur·euse !'},
+  {id:'super', cond:()=>stats.supers>=1,   txt:'⭐ Premier super-like envoyé !'},
+  {id:'picky', cond:()=>stats.nopes>=10,   txt:'🧐 10 refus : difficile en amour !'},
+  {id:'perf',  cond:()=>stats.best>=95,    txt:'💯 Compatibilité quasi parfaite atteinte !'},
+  {id:'serial',cond:()=>stats.likes>=20,   txt:'🔥 20 likes — machine à cœurs !'}
+];
+function checkBadges(){
+  BADGES.forEach(b=>{ if(!unlocked[b.id]&&b.cond()){unlocked[b.id]=1; saveBadges(); toast(b.txt);} });
+}
+function toast(txt){
+  const host=document.getElementById('toast');
+  const d=document.createElement('div'); d.className='toast'; d.textContent=txt;
+  host.appendChild(d); blip(920,.1,'triangle'); buzz(25);
+  setTimeout(()=>d.remove(),3100);
+}
+
 /* ================= RESET ================= */
 function resetDeck(){buildDeck(); renderDeck(); refreshBtns();}
 function resetAll(){
   if(confirm('Recommencer depuis le début ? (ton profil et tes matchs seront effacés)')){
-    try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem(M_KEY);}catch(e){}
+    try{[SAVE_KEY,M_KEY,C_KEY,S_KEY,B_KEY].forEach(k=>localStorage.removeItem(k));}catch(e){}
     location.reload();
   }
 }
