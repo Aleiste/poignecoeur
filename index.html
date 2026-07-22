@@ -436,6 +436,7 @@ let chats={},currentChat=null,unlocked={};
 let profPhotos=[],profGalleryIdx=0;
 let aiKey='',aiOn=false;
 const AI_MODEL='gemini-2.0-flash';
+const BUILTIN_AI_KEY='__GEMINI_API_KEY__'; // remplacé au build par le secret GitHub (sinon reste tel quel = ignoré)
 let stats={likes:0,nopes:0,supers:0,matches:0,best:0};
 
 /* ================= STORAGE ================= */
@@ -459,6 +460,11 @@ function loadState(){
     const s=JSON.parse(localStorage.getItem(S_KEY)||'null'); if(s&&typeof s==='object')stats=Object.assign(stats,s);
     const b=JSON.parse(localStorage.getItem(B_KEY)||'{}'); if(b&&typeof b==='object')unlocked=b;
     aiKey=localStorage.getItem(AIK_KEY)||''; aiOn=localStorage.getItem(AION_KEY)==='1';
+    // clé intégrée à l'APK au build (si le secret GitHub a bien remplacé le placeholder)
+    if(!aiKey && BUILTIN_AI_KEY.indexOf('GEMINI_API_KEY')===-1){
+      aiKey=BUILTIN_AI_KEY;
+      if(localStorage.getItem(AION_KEY)===null) aiOn=true; // activé par défaut, sauf si tu l'as déjà coupé
+    }
   }catch(e){}
 }
 function saveAI(){try{localStorage.setItem(AIK_KEY,aiKey);localStorage.setItem(AION_KEY,aiOn?'1':'0');}catch(e){}}

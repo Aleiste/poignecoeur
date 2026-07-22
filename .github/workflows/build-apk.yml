@@ -30,6 +30,17 @@ jobs:
           cp index.html android/app/src/main/assets/index.html
           cp -r assets android/app/src/main/assets/assets
 
+      - name: Inject Gemini API key (optionnel)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "$GEMINI_API_KEY" ]; then
+            sed -i "s|__GEMINI_API_KEY__|${GEMINI_API_KEY}|g" android/app/src/main/assets/index.html
+            echo "Cle Gemini injectee dans l'APK."
+          else
+            echo "Pas de secret GEMINI_API_KEY : le chat IA restera en mode manuel/hors-ligne."
+          fi
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
