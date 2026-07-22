@@ -181,8 +181,8 @@
     border:0;background:rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.15);font-size:18px;cursor:pointer}
   .pscroll{flex:1;overflow-y:auto;padding:18px 18px 4px;display:flex;flex-direction:column;align-items:center}
   .pgallery{display:flex;justify-content:center;width:100%}
-  .pframe{position:relative;height:56vh;max-height:520px;border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
-  .pimg{height:100%;background-repeat:no-repeat;background-position:center}
+  .pframe{position:relative;height:56vh;max-height:520px;aspect-ratio:4/5;border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}
+  .pimg{position:absolute;background-repeat:no-repeat}
   .pseg{position:absolute;top:8px;left:8px;right:8px;z-index:4;display:flex;gap:5px}
   .pseg span{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.5)}
   .pseg span.on{background:#fff}
@@ -683,21 +683,26 @@ function refreshBtns(){ document.getElementById('rewindBtn').disabled=!lastSwipe
 /* ================= FICHE PROFIL (full-body) ================= */
 let profileP=null;
 const SIL_SHEET_F='assets/avatars/full-body/femmes-silhouette/planche-femmes-silhouette-20.png';
-function spriteStyle(url,i,aspect){var c=i%5,r=Math.floor(i/5);
-  return "background-image:url('"+url+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%;aspect-ratio:"+aspect;}
+// Recadre (cover) la cellule i d'une planche cols x rows dans le cadre 4/5, sans distorsion ni format longiligne
+function coverStyle(url,i,sheetAspect){
+  const cols=5,rows=4,Af=4/5,c=i%cols,r=Math.floor(i/cols);
+  const wpct=cols*100, hpct=cols/sheetAspect*Af*100, cellH=hpct/rows;
+  return "background-image:url('"+url+"');background-size:100% 100%;"
+    +"width:"+wpct+"%;height:"+hpct.toFixed(2)+"%;left:"+(-c*100)+"%;top:"+(-(r*cellH)).toFixed(2)+"%";
+}
 function profilePhotosOf(p){
   if(p.photos&&p.photos.length) return p.photos.map(u=>({url:u}));
-  if(p.ava.g==='H') return [{sheet:sheetUrl('H',false), i:p.ava.i, aspect:'4/5'}]; // hommes : 1 photo (portrait)
+  if(p.ava.g==='H') return [{sheet:sheetUrl('H',false), i:p.ava.i, sa:1}]; // hommes : 1 photo (portrait carré)
   return [
-    {sheet:sheetUrl('F',false), i:p.ava.i, aspect:'4/5'},  // portrait
-    {sheet:sheetUrl('F',true),  i:p.ava.i, aspect:'2/5'},  // photo en pied
-    {sheet:SIL_SHEET_F,         i:p.ava.i, aspect:'2/5'}   // silhouette
+    {sheet:sheetUrl('F',false), i:p.ava.i, sa:1},    // portrait (planche carrée)
+    {sheet:sheetUrl('F',true),  i:p.ava.i, sa:0.5},  // full-body -> recadré en 4/5
+    {sheet:SIL_SHEET_F,         i:p.ava.i, sa:0.5}   // silhouette -> recadré en 4/5
   ];
 }
 function renderGallery(){
   const ph=profPhotos[profGalleryIdx]||{}, img=document.getElementById('p-img');
-  if(ph.url) img.setAttribute('style','aspect-ratio:3/4;background-image:url('+ph.url+');background-size:cover;background-position:center');
-  else img.setAttribute('style', spriteStyle(ph.sheet,ph.i,ph.aspect));
+  if(ph.url) img.setAttribute('style','left:0;top:0;width:100%;height:100%;background-image:url('+ph.url+');background-size:cover;background-position:center');
+  else img.setAttribute('style', coverStyle(ph.sheet,ph.i,ph.sa));
   const seg=document.getElementById('p-seg'); seg.innerHTML='';
   profPhotos.forEach((_,k)=>{const s=document.createElement('span'); if(k===profGalleryIdx)s.className='on'; seg.appendChild(s);});
 }
