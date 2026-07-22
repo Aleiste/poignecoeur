@@ -353,6 +353,18 @@
       <label class="f">Ma petite phrase</label>
       <input type="text" id="e-bio" maxlength="60">
       <div id="e-morph"></div>
+
+      <div style="margin-top:22px;padding-top:16px;border-top:1px solid #f0e2ec">
+        <label class="f">🤖 Chat IA <span style="color:var(--muted);font-weight:500">(optionnel, gratuit)</span></label>
+        <p class="sub" style="margin-bottom:10px">Colle une clé <b>Google Gemini</b> pour des réponses générées par IA. Sans clé, le chat reste hors-ligne. La clé reste sur ton téléphone.</p>
+        <input type="password" id="e-aikey" placeholder="Clé API Gemini (AIza…)" autocomplete="off">
+        <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;cursor:pointer">
+          <input type="checkbox" id="e-aion" style="width:20px;height:20px;accent-color:var(--pink)"> Activer le chat IA
+        </label>
+        <div style="font-size:13px;margin-top:10px">
+          🔑 Obtenir une clé gratuite : <br><span style="color:var(--purple);word-break:break-all">aistudio.google.com/apikey</span>
+        </div>
+      </div>
     </div>
     <button class="btn btn-primary" style="margin-top:12px" onclick="saveEdit()">Enregistrer 💾</button>
   </section>
@@ -422,11 +434,14 @@ let me={name:'',age:'',gender:'',hand:19,cup:'',avatar:'',bio:'',photos:[]};
 let deck=[],idx=0,matches=[],lastSwipe=null,soundOn=true;
 let chats={},currentChat=null,unlocked={};
 let profPhotos=[],profGalleryIdx=0;
+let aiKey='',aiOn=false;
+const AI_MODEL='gemini-2.0-flash';
 let stats={likes:0,nopes:0,supers:0,matches:0,best:0};
 
 /* ================= STORAGE ================= */
 const SAVE_KEY='poignecoeur.profile', M_KEY='poignecoeur.matches',
-      C_KEY='poignecoeur.chats', S_KEY='poignecoeur.stats', B_KEY='poignecoeur.badges';
+      C_KEY='poignecoeur.chats', S_KEY='poignecoeur.stats', B_KEY='poignecoeur.badges',
+      AIK_KEY='poignecoeur.aikey', AION_KEY='poignecoeur.aion';
 function saveProfile(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(me))}catch(e){}}
 function saveMatches(){try{localStorage.setItem(M_KEY,JSON.stringify(matches))}catch(e){}}
 function saveChats(){try{localStorage.setItem(C_KEY,JSON.stringify(chats))}catch(e){}}
@@ -443,8 +458,11 @@ function loadState(){
     const c=JSON.parse(localStorage.getItem(C_KEY)||'{}'); if(c&&typeof c==='object')chats=c;
     const s=JSON.parse(localStorage.getItem(S_KEY)||'null'); if(s&&typeof s==='object')stats=Object.assign(stats,s);
     const b=JSON.parse(localStorage.getItem(B_KEY)||'{}'); if(b&&typeof b==='object')unlocked=b;
+    aiKey=localStorage.getItem(AIK_KEY)||''; aiOn=localStorage.getItem(AION_KEY)==='1';
   }catch(e){}
 }
+function saveAI(){try{localStorage.setItem(AIK_KEY,aiKey);localStorage.setItem(AION_KEY,aiOn?'1':'0');}catch(e){}}
+function aiEnabled(){return !!(aiOn&&aiKey);}
 
 /* ================= NAV ================= */
 function go(id){
@@ -663,12 +681,12 @@ function spriteStyle(url,i,aspect){var c=i%5,r=Math.floor(i/5);
   return "background-image:url('"+url+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%;aspect-ratio:"+aspect;}
 function profilePhotosOf(p){
   if(p.photos&&p.photos.length) return p.photos.map(u=>({url:u}));
-  const list=[
-    {sheet:sheetUrl(p.ava.g,false), i:p.ava.i, aspect:'4/5'},  // portrait
-    {sheet:sheetUrl(p.ava.g,true),  i:p.ava.i, aspect:'2/5'}   // photo en pied
+  if(p.ava.g==='H') return [{sheet:sheetUrl('H',false), i:p.ava.i, aspect:'4/5'}]; // hommes : 1 photo (portrait)
+  return [
+    {sheet:sheetUrl('F',false), i:p.ava.i, aspect:'4/5'},  // portrait
+    {sheet:sheetUrl('F',true),  i:p.ava.i, aspect:'2/5'},  // photo en pied
+    {sheet:SIL_SHEET_F,         i:p.ava.i, aspect:'2/5'}   // silhouette
   ];
-  if(p.ava.g==='F') list.push({sheet:SIL_SHEET_F, i:p.ava.i, aspect:'2/5'}); // silhouette (femmes uniquement)
-  return list;
 }
 function renderGallery(){
   const ph=profPhotos[profGalleryIdx]||{}, img=document.getElementById('p-img');
@@ -762,6 +780,8 @@ function openEdit(){
   document.getElementById('e-name').value=me.name||'';
   document.getElementById('e-age').value=me.age||'';
   document.getElementById('e-bio').value=me.bio||'';
+  document.getElementById('e-aikey').value=aiKey||'';
+  document.getElementById('e-aion').checked=aiOn;
   buildEditMorph(); renderMyThumbs('editThumbs'); blip(660,.05); go('editprofile');
 }
 function saveEdit(){
@@ -769,7 +789,12 @@ function saveEdit(){
   if(n)me.name=n;
   me.age=document.getElementById('e-age').value||me.age;
   me.bio=document.getElementById('e-bio').value.trim();
-  saveProfile(); toast('✅ Profil enregistré !'); go('swipe');
+  aiKey=document.getElementById('e-aikey').value.trim();
+  aiOn=document.getElementById('e-aion').checked;
+  if(aiOn&&!aiKey){aiOn=false; toast('⚠️ Ajoute une clé pour activer l\'IA');}
+  saveProfile(); saveAI();
+  toast(aiEnabled()?'✅ Profil enregistré — chat IA activé 🤖':'✅ Profil enregistré !');
+  go('swipe');
 }
 
 /* ================= MATCH ================= */
@@ -781,7 +806,8 @@ function maybeMatch(p,sup){
 }
 function registerMatch(p,s){
   const id=Date.now()+'-'+Math.floor(Math.random()*1000);
-  matches.unshift({id:id,name:p.name,ava:p.ava,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
+  matches.unshift({id:id,name:p.name,ava:p.ava,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),
+    age:p.age,bio:p.bio,tags:p.tags,when:Date.now()});
   if(matches.length>50)matches.pop();
   stats.matches++; stats.best=Math.max(stats.best,s); saveStats();
   saveMatches(); updateMatchCount(); checkBadges();
@@ -884,10 +910,39 @@ function botReply(text,m){
   return rnd(FALLBACK);
 }
 
+/* ---- Chat IA (Google Gemini, niveau gratuit) ---- */
+function buildPersona(m){
+  const who=me.gender==='H'?'une femme':'un homme';
+  return "Tu incarnes "+(m.name||"quelqu'un")+", "+who+" de "+(m.age||"27")+" ans sur PoigneCœuR, "
+    +"une appli de rencontre 100% humoristique dont le concept parodique est la \"compatibilité morphologique\". "
+    +"Tu viens de matcher avec ton interlocuteur (score de compatibilité "+(m.score||"?")+"%). "
+    +"Ta morphologie affichée sur ton profil : "+(m.morpho||"?")+". "
+    +(m.tags&&m.tags.length?("Tes centres d'intérêt : "+m.tags.join(', ')+". "):"")
+    +(m.bio?("Ta bio : \""+m.bio+"\". "):"")
+    +"Réponds en français, tutoiement, comme un vrai SMS : UN seul message court (1 à 2 phrases max), "
+    +"léger, drôle, flirt bon enfant, quelques emojis ok. Pose parfois une question pour relancer. "
+    +"Ne dis JAMAIS que tu es une IA, un modèle ou un assistant : reste dans le personnage. Jamais vulgaire ni explicite.";
+}
+function aiReply(cid,m){
+  const hist=(chats[cid]||[]).slice(-16).map(x=>({role:x.me?'user':'model',parts:[{text:String(x.text||'')}]}));
+  if(hist.length&&hist[0].role==='model') hist.shift(); // Gemini exige que le 1er tour soit "user"
+  const body={system_instruction:{parts:[{text:buildPersona(m||{})}]},contents:hist,
+    generationConfig:{temperature:0.9,maxOutputTokens:160,topP:0.95}};
+  return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+AI_MODEL+':generateContent?key='+encodeURIComponent(aiKey),
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{
+      if(d&&d.error) throw new Error(d.error.message||'api');
+      const c=d&&d.candidates&&d.candidates[0];
+      const txt=c&&c.content&&c.content.parts&&c.content.parts[0]&&c.content.parts[0].text;
+      if(!txt) throw new Error('empty');
+      return txt.trim();
+    });
+}
+
 function openChat(id){
   const m=matches.find(x=>x.id===id); if(!m)return;
   currentChat=id;
-  document.getElementById('chat-name').textContent=m.name;
+  document.getElementById('chat-name').textContent=m.name+(aiEnabled()?' 🤖':'');
   const a=m.ava||{g:'F',i:0};
   document.getElementById('chat-av').innerHTML=avaHTML(a.g,a.i,'round');
   if(!chats[id]||!chats[id].length){chats[id]=[]; pushMsg(id,false,opener(m.score)); saveChats();}
@@ -908,14 +963,17 @@ function sendMsg(){
   const l=document.getElementById('clist');
   const typ=document.createElement('div'); typ.className='typing'; typ.textContent='✍️ en train d\'écrire…';
   l.appendChild(typ); l.scrollTop=l.scrollHeight;
-  const cid=currentChat, reply=botReply(t, matches.find(x=>x.id===cid));
-  const delay=Math.min(2200, 650+reply.length*22);
-  setTimeout(()=>{
-    typ.remove();
-    pushMsg(cid,false,reply); saveChats();
-    if(currentChat===cid) renderChat();
-    blip(680,.06,'triangle'); buzz(15);
-  },delay);
+  const cid=currentChat, m=matches.find(x=>x.id===cid);
+  const deliver=reply=>{ typ.remove(); pushMsg(cid,false,reply); saveChats();
+    if(currentChat===cid) renderChat(); blip(680,.06,'triangle'); buzz(15); };
+  if(aiEnabled()){
+    aiReply(cid,m)
+      .then(reply=>deliver(reply))
+      .catch(err=>{ deliver(botReply(t,m)); toast('🤖 IA indisponible — réponse hors-ligne'); });
+  } else {
+    const reply=botReply(t,m);
+    setTimeout(()=>deliver(reply), Math.min(2200,650+reply.length*22));
+  }
 }
 
 /* ================= BADGES / NOTIFS ================= */
