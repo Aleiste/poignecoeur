@@ -658,14 +658,22 @@ function refreshBtns(){ document.getElementById('rewindBtn').disabled=!lastSwipe
 
 /* ================= FICHE PROFIL (full-body) ================= */
 let profileP=null;
+const SIL_SHEET_F='assets/avatars/full-body/femmes-silhouette/planche-femmes-silhouette-20.png';
+function spriteStyle(url,i,aspect){var c=i%5,r=Math.floor(i/5);
+  return "background-image:url('"+url+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%;aspect-ratio:"+aspect;}
 function profilePhotosOf(p){
   if(p.photos&&p.photos.length) return p.photos.map(u=>({url:u}));
-  return [{g:p.ava.g,i:p.ava.i,full:false},{g:p.ava.g,i:p.ava.i,full:true}]; // portrait + full-body
+  const list=[
+    {sheet:sheetUrl(p.ava.g,false), i:p.ava.i, aspect:'4/5'},  // portrait
+    {sheet:sheetUrl(p.ava.g,true),  i:p.ava.i, aspect:'2/5'}   // photo en pied
+  ];
+  if(p.ava.g==='F') list.push({sheet:SIL_SHEET_F, i:p.ava.i, aspect:'2/5'}); // silhouette (femmes uniquement)
+  return list;
 }
 function renderGallery(){
   const ph=profPhotos[profGalleryIdx]||{}, img=document.getElementById('p-img');
-  if(ph.url){ img.setAttribute('style','aspect-ratio:3/4;background-image:url('+ph.url+');background-size:cover;background-position:center'); }
-  else { img.setAttribute('style', avaStyle(ph.g,ph.i,ph.full)+';aspect-ratio:'+(ph.full?'2/5':'4/5')); }
+  if(ph.url) img.setAttribute('style','aspect-ratio:3/4;background-image:url('+ph.url+');background-size:cover;background-position:center');
+  else img.setAttribute('style', spriteStyle(ph.sheet,ph.i,ph.aspect));
   const seg=document.getElementById('p-seg'); seg.innerHTML='';
   profPhotos.forEach((_,k)=>{const s=document.createElement('span'); if(k===profGalleryIdx)s.className='on'; seg.appendChild(s);});
 }
