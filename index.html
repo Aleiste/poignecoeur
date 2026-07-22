@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#e84393">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PoigneCœuR">
+<title>PoigneCœuR 💘 — l'amour à la bonne taille</title>
+<style>
+  :root{
+    --pink:#e84393; --pink-d:#c72c78; --purple:#6c5ce7;
+    --bg1:#ffecf4; --bg2:#f3e9ff; --ink:#2d2130; --muted:#8a7d8f;
+    --card:#ffffff; --ok:#00b894; --warn:#fdcb6e; --bad:#d63031;
+    --shadow:0 18px 40px rgba(200,40,120,.20);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    display:flex;align-items:center;justify-content:center;
+    min-height:100dvh;overflow:hidden;
+  }
+  #app{
+    width:min(430px,100vw);height:min(880px,100dvh);
+    background:linear-gradient(160deg,#fff,#fff6fb);
+    position:relative;overflow:hidden;
+    box-shadow:var(--shadow);
+    display:flex;flex-direction:column;
+  }
+  @media(min-width:460px){#app{border-radius:34px;height:min(860px,96dvh)}}
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding:22px;animation:fade .35s ease}
+  .screen.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .brand{font-size:30px;font-weight:900;letter-spacing:-.5px;text-align:center;
+    background:linear-gradient(90deg,var(--pink),var(--purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{text-align:center;color:var(--muted);font-size:13px;margin-top:2px}
+
+  #welcome{align-items:center;justify-content:center;text-align:center;gap:6px}
+  .hero{font-size:84px;line-height:1;animation:beat 1.6s infinite}
+  @keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(1)}36%{transform:scale(1.12)}}
+  .pitch{color:var(--muted);font-size:15px;max-width:290px;margin:14px auto 0;line-height:1.5}
+  .disclaimer{font-size:11px;color:var(--muted);opacity:.8;margin-top:18px;max-width:280px}
+
+  .btn{border:0;border-radius:16px;padding:15px 22px;font-size:16px;font-weight:800;
+    cursor:pointer;transition:transform .12s,box-shadow .2s;width:100%}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;
+    box-shadow:0 10px 22px rgba(232,67,147,.4)}
+  .btn-ghost{background:#fff;color:var(--pink);border:2px solid #ffd6e8;margin-top:10px}
+
+  h2.step{font-size:22px;font-weight:900;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  label.f{display:block;font-weight:700;font-size:14px;margin:16px 0 8px}
+  input[type=text],input[type=number]{width:100%;padding:14px;border:2px solid #f0e2ec;border-radius:14px;
+    font-size:16px;background:#fff;transition:border .2s}
+  input:focus{outline:0;border-color:var(--pink)}
+  .seg{display:flex;gap:10px;flex-wrap:wrap}
+  .seg .opt{flex:1;min-width:90px;text-align:center;padding:14px 8px;border:2px solid #f0e2ec;border-radius:14px;
+    cursor:pointer;font-weight:700;transition:.15s;background:#fff;user-select:none}
+  .seg .opt.sel{border-color:var(--pink);background:#fff0f7;color:var(--pink-d);transform:translateY(-1px)}
+  .grid-cup{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .grid-cup .opt{min-width:0;padding:14px 4px;font-size:18px}
+
+  .measure{border:2px dashed #f0c6dd;border-radius:18px;padding:16px;text-align:center;background:#fff8fc}
+  .rangewrap{margin-top:10px}
+  input[type=range]{width:100%;accent-color:var(--pink)}
+  .bigval{font-size:34px;font-weight:900;color:var(--pink-d)}
+  .handviz{transition:transform .1s;display:inline-block}
+  .handviz span{font-size:64px;display:inline-block}
+
+  .spacer{flex:1}
+  .foot{padding-top:14px}
+  .backlink{background:none;border:0;color:var(--muted);font-weight:700;cursor:pointer;font-size:14px;padding:8px}
+
+  #deck-wrap{flex:1;position:relative;margin:8px 0}
+  .card{position:absolute;inset:0;background:var(--card);border-radius:26px;overflow:hidden;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;
+    will-change:transform;touch-action:pan-y;cursor:grab}
+  .card .photo{flex:1;display:flex;align-items:center;justify-content:center;font-size:130px;
+    background:linear-gradient(160deg,#ffe0ef,#e9deff);position:relative}
+  .badge{position:absolute;top:16px;padding:8px 14px;border-radius:30px;font-weight:900;font-size:26px;
+    border:4px solid #fff;opacity:0;transform:rotate(-12deg);transition:opacity .1s}
+  .badge.like{left:16px;color:var(--ok);border-color:var(--ok)}
+  .badge.nope{right:16px;color:var(--bad);border-color:var(--bad);transform:rotate(12deg)}
+  .badge.star{left:50%;top:40%;transform:translate(-50%,-50%) rotate(-8deg);color:var(--purple);border-color:var(--purple);font-size:22px}
+  .card .info{padding:16px 18px 20px}
+  .card .nm{font-size:24px;font-weight:900}
+  .card .nm small{font-weight:600;color:var(--muted);font-size:16px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .chip{background:#fff0f7;color:var(--pink-d);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
+  .bio{color:var(--muted);font-size:14px;line-height:1.4}
+
+  .actions{display:flex;justify-content:center;align-items:center;gap:14px;padding:6px 0 4px}
+  .circle{width:60px;height:60px;border-radius:50%;border:0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.12);
+    font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+  .circle:active{transform:scale(.9)}
+  .circle:disabled{opacity:.35;cursor:default}
+  .circle.no{color:var(--bad)} .circle.yes{color:var(--ok)}
+  .circle.rewind{color:var(--warn);width:48px;height:48px;font-size:20px}
+  .circle.star{color:var(--purple);width:48px;height:48px;font-size:20px}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .topbar .brand{font-size:22px}
+  .topbar .right{display:flex;gap:6px;align-items:center}
+  .iconbtn{background:none;border:0;font-size:22px;cursor:pointer;position:relative;padding:4px}
+  .count{position:absolute;top:-2px;right:-4px;background:var(--pink);color:#fff;font-size:10px;font-weight:900;
+    min-width:16px;height:16px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:var(--muted)}
+
+  /* matchs list */
+  #matches{padding-top:16px}
+  .mlist{flex:1;overflow-y:auto;margin-top:6px}
+  .mrow{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:0 6px 16px rgba(0,0,0,.06)}
+  .mrow .av{font-size:38px}
+  .mrow .mid{flex:1}
+  .mrow .mid b{font-size:16px}
+  .mrow .mid div{font-size:12px;color:var(--muted)}
+  .mrow .sc{font-weight:900;font-size:18px}
+
+  #match{position:absolute;inset:0;background:linear-gradient(160deg,rgba(232,67,147,.96),rgba(108,92,231,.96));
+    display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:26px;z-index:20}
+  #match.show{display:flex;animation:fade .3s}
+  #match h1{font-size:42px;font-weight:900;text-shadow:0 4px 14px rgba(0,0,0,.2)}
+  .matchfaces{font-size:70px;margin:10px 0}
+  .scorebubble{background:#fff;color:var(--ink);border-radius:24px;padding:18px 22px;margin:16px 0;box-shadow:var(--shadow);max-width:300px}
+  .scorenum{font-size:52px;font-weight:900;line-height:1}
+  .scorenum.s-hi{color:var(--ok)} .scorenum.s-mid{color:var(--warn)} .scorenum.s-lo{color:var(--bad)}
+  .scoremsg{font-size:14px;color:var(--muted);margin-top:6px}
+  #match .btn{max-width:300px}
+  .confetti{position:absolute;top:-10px;font-size:20px;animation:fall linear forwards;pointer-events:none}
+  @keyframes fall{to{transform:translateY(900px) rotate(540deg);opacity:0}}
+
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- WELCOME -->
+  <section id="welcome" class="screen active">
+    <div class="hero">💘🖐️</div>
+    <div class="brand">PoigneCœuR</div>
+    <div class="tagline">L'amour à la bonne taille</div>
+    <p class="pitch">La 1ʳᵉ appli de rencontre scientifiquement* basée sur la <b>compatibilité morphologique</b>. On ne juge pas… on <i>mesure</i>. 📏</p>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="startFlow()">Trouver ma moitié 💞</button>
+    <button class="btn btn-ghost hidden" id="resumeBtn" onclick="resume()">Reprendre mon profil ↩️</button>
+    <p class="disclaimer">*Pas scientifique du tout. Appli 100 % humoristique, entre potes. Aucune donnée ne quitte ton téléphone. 😄</p>
+  </section>
+
+  <!-- ONBOARDING 1 -->
+  <section id="onb1" class="screen">
+    <div class="brand">PoigneCœuR</div>
+    <div class="spacer" style="max-height:20px"></div>
+    <h2 class="step">On fait connaissance 👋</h2>
+    <p class="sub">Étape 1 sur 3</p>
+    <label class="f">Ton prénom</label>
+    <input type="text" id="f-name" placeholder="Ex : Alex" maxlength="20">
+    <label class="f">Ton âge</label>
+    <input type="number" id="f-age" placeholder="Ex : 28" min="18" max="99">
+    <label class="f">Je suis…</label>
+    <div class="seg" id="f-gender">
+      <div class="opt" data-v="H">👨 Un homme</div>
+      <div class="opt" data-v="F">👩 Une femme</div>
+    </div>
+    <p class="sub" style="margin-top:8px">Focus hétéro pour l'instant — tu verras l'autre camp. 😉</p>
+    <div class="spacer"></div>
+    <div class="foot">
+      <button class="btn btn-primary" onclick="submitOnb1()">Continuer</button>
+      <button class="backlink" onclick="go('welcome')">← Retour</button>
+    </div>
+  </section>
+
+  <!-- ONBOARDING 2 -->
+  <section id="onb2" class="screen">
+    <div class="brand">PoigneCœuR</div>
+    <div class="spacer" style="max-height:20px"></div>
+    <h2 class="step">Le grand relevé 📐</h2>
+    <p class="sub">Étape 2 sur 3 — la partie sérieuse (enfin presque)</p>
+
+    <div id="morph-H" class="hidden">
+      <div class="measure">
+        <div class="handviz" id="handviz"><span>🖐️</span></div>
+        <div class="bigval"><span id="handval">19</span> cm</div>
+        <div style="font-size:12px;color:var(--muted)">longueur de main (poignet → majeur)</div>
+        <div class="rangewrap">
+          <input type="range" id="f-hand" min="15" max="24" step="0.5" value="19" oninput="updateHand()">
+        </div>
+        <div style="font-size:12px;color:var(--muted)" id="handlabel">Une main tout à fait honorable 👌</div>
+      </div>
+    </div>
+
+    <div id="morph-F" class="hidden">
+      <label class="f">Tour de bonnet</label>
+      <div class="grid-cup" id="f-cup">
+        <div class="opt" data-v="A">A</div>
+        <div class="opt" data-v="B">B</div>
+        <div class="opt" data-v="C">C</div>
+        <div class="opt" data-v="D">D</div>
+        <div class="opt" data-v="E">E</div>
+        <div class="opt" data-v="F">F</div>
+        <div class="opt" data-v="G">G</div>
+        <div class="opt" data-v="+">G+</div>
+      </div>
+      <p class="sub" style="margin-top:14px">Info d'ambiance uniquement, promis c'est pour la blague. 🙈</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="foot">
+      <button class="btn btn-primary" onclick="submitOnb2()">Continuer</button>
+      <button class="backlink" onclick="go('onb1')">← Retour</button>
+    </div>
+  </section>
+
+  <!-- ONBOARDING 3 -->
+  <section id="onb3" class="screen">
+    <div class="brand">PoigneCœuR</div>
+    <div class="spacer" style="max-height:20px"></div>
+    <h2 class="step">La touche finale ✨</h2>
+    <p class="sub">Étape 3 sur 3</p>
+    <label class="f">Choisis ton avatar</label>
+    <div class="seg" id="f-avatar" style="flex-wrap:wrap"></div>
+    <label class="f">Ta petite phrase</label>
+    <input type="text" id="f-bio" placeholder="Ex : Cherche la main qui me correspond 🖐️" maxlength="60">
+    <div class="spacer"></div>
+    <div class="foot">
+      <button class="btn btn-primary" onclick="submitOnb3()">C'est parti ! 🚀</button>
+      <button class="backlink" onclick="go('onb2')">← Retour</button>
+    </div>
+  </section>
+
+  <!-- DECK -->
+  <section id="swipe" class="screen">
+    <div class="topbar">
+      <span class="brand">PoigneCœuR</span>
+      <div class="right">
+        <button class="iconbtn" onclick="openMatches()" title="Mes matchs">💞<span class="count hidden" id="mcount">0</span></button>
+        <button class="iconbtn" onclick="toggleSound()" id="soundBtn" title="Son">🔊</button>
+        <button class="iconbtn" onclick="resetAll()" title="Recommencer">🔄</button>
+      </div>
+    </div>
+    <div id="deck-wrap"></div>
+    <div class="actions">
+      <button class="circle rewind" id="rewindBtn" onclick="rewind()" title="Annuler" disabled>↩️</button>
+      <button class="circle no" onclick="btnSwipe(false)">✖️</button>
+      <button class="circle star" onclick="superLike()" title="Super-like">⭐</button>
+      <button class="circle yes" onclick="btnSwipe(true)">❤️</button>
+    </div>
+  </section>
+
+  <!-- MATCHS -->
+  <section id="matches" class="screen">
+    <div class="topbar">
+      <span class="brand">Mes matchs 💞</span>
+      <button class="iconbtn" onclick="go('swipe')" title="Retour">✖️</button>
+    </div>
+    <div class="mlist" id="mlist"></div>
+  </section>
+
+  <!-- MATCH MODAL -->
+  <div id="match">
+    <h1>C'est un MATCH !</h1>
+    <div class="matchfaces" id="matchfaces">💞</div>
+    <div class="scorebubble">
+      <div class="scorenum" id="matchscore">92%</div>
+      <div style="font-weight:800;font-size:13px;margin-top:4px">de compatibilité morphologique</div>
+      <div class="scoremsg" id="matchmsg"></div>
+    </div>
+    <button class="btn btn-primary" onclick="closeMatch()">Continuer à swiper 🔥</button>
+  </div>
+
+</div>
+
+<script>
+/* ================= STATE ================= */
+const AVATARS_H=['👨','🧔','👱‍♂️','👨‍🦰','👨‍🦱','👨‍🦳','🧑','👨‍🎤'];
+const AVATARS_F=['👩','👱‍♀️','👩‍🦰','👩‍🦱','👩‍🦳','🧑‍🦰','👩‍🎤','💁‍♀️'];
+let me={name:'',age:'',gender:'',hand:19,cup:'',avatar:'',bio:''};
+let deck=[],idx=0,matches=[],lastSwipe=null,soundOn=true;
+
+/* ================= STORAGE ================= */
+const SAVE_KEY='poignecoeur.profile', M_KEY='poignecoeur.matches';
+function saveProfile(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(me))}catch(e){}}
+function saveMatches(){try{localStorage.setItem(M_KEY,JSON.stringify(matches))}catch(e){}}
+function loadState(){
+  try{
+    const p=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(p&&p.name&&p.gender){me=p; document.getElementById('resumeBtn').classList.remove('hidden');}
+    const m=JSON.parse(localStorage.getItem(M_KEY)||'[]'); if(Array.isArray(m))matches=m;
+  }catch(e){}
+}
+
+/* ================= NAV ================= */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function startFlow(){ blip(660,.05); go('onb1'); }
+function resume(){ blip(720,.05); buildDeck(); go('swipe'); renderDeck(); updateMatchCount(); }
+
+/* ================= SON (WebAudio, aucun fichier) ================= */
+let AC=null;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}} return AC; }
+function blip(freq,dur,type){
+  if(!soundOn)return; const c=ac(); if(!c)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine'; o.frequency.value=freq;
+  o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(.0001,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.25,c.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+dur);
+  o.start(); o.stop(c.currentTime+dur+.02);
+}
+function chime(){ if(!soundOn)return; [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,.18,'triangle'),i*90)); }
+function buzz(ms){ if(navigator.vibrate)navigator.vibrate(ms); }
+function toggleSound(){ soundOn=!soundOn; document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇'; if(soundOn)blip(700,.05); }
+
+/* ================= ONBOARDING ================= */
+document.querySelectorAll('#f-gender .opt').forEach(o=>o.onclick=()=>{
+  document.querySelectorAll('#f-gender .opt').forEach(x=>x.classList.remove('sel'));
+  o.classList.add('sel'); me.gender=o.dataset.v; blip(600,.04);
+});
+document.querySelectorAll('#f-cup .opt').forEach(o=>o.onclick=()=>{
+  document.querySelectorAll('#f-cup .opt').forEach(x=>x.classList.remove('sel'));
+  o.classList.add('sel'); me.cup=o.dataset.v; blip(680,.04);
+});
+function submitOnb1(){
+  const n=document.getElementById('f-name').value.trim();
+  const a=document.getElementById('f-age').value;
+  if(!n){alert('Il me faut au moins un prénom 😅');return;}
+  if(!me.gender){alert('Choisis « homme » ou « femme » 🙂');return;}
+  me.name=n; me.age=a||'';
+  document.getElementById('morph-H').classList.toggle('hidden', me.gender!=='H');
+  document.getElementById('morph-F').classList.toggle('hidden', me.gender!=='F');
+  blip(660,.05); go('onb2');
+}
+let lastHand=19;
+function updateHand(){
+  const v=parseFloat(document.getElementById('f-hand').value);
+  me.hand=v; document.getElementById('handval').textContent=v;
+  const scale=0.7+(v-15)/9*0.7;
+  document.getElementById('handviz').style.transform='scale('+scale+')';
+  if(v!==lastHand){ blip(300+v*20,.02,'square'); lastHand=v; }
+  let lbl='Une main tout à fait honorable 👌';
+  if(v<17) lbl='Petite mais pleine de tendresse 🤏';
+  else if(v>=21.5) lbl='Là on parle carrément de battoirs 🖐️💪';
+  else if(v>=20) lbl='De belles paluches, mazette ! 🙌';
+  document.getElementById('handlabel').textContent=lbl;
+}
+function submitOnb2(){
+  if(me.gender==='F'&&!me.cup){alert('Sélectionne un bonnet 😄');return;}
+  buildAvatars(); blip(660,.05); go('onb3');
+}
+function buildAvatars(){
+  const list=me.gender==='H'?AVATARS_H:AVATARS_F;
+  const box=document.getElementById('f-avatar'); box.innerHTML='';
+  list.forEach((a,i)=>{
+    const d=document.createElement('div');
+    d.className='opt'; d.style.fontSize='30px'; d.style.minWidth='0'; d.style.flex='0 0 20%';
+    d.textContent=a; d.onclick=()=>{
+      box.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+      d.classList.add('sel'); me.avatar=a; blip(680,.04);
+    };
+    if(i===0){d.classList.add('sel'); me.avatar=a;}
+    box.appendChild(d);
+  });
+}
+function submitOnb3(){
+  me.bio=document.getElementById('f-bio').value.trim();
+  saveProfile(); buildDeck(); chime(); go('swipe'); renderDeck(); updateMatchCount();
+}
+
+/* ================= MOCK PROFILS ================= */
+const NAMES_F=['Camille','Léa','Manon','Chloé','Inès','Jade','Sarah','Emma','Louna','Zoé','Nina','Clara','Lucie','Anaïs','Maëva','Océane','Alice'];
+const NAMES_H=['Lucas','Hugo','Nathan','Léo','Enzo','Théo','Raphaël','Gabriel','Adam','Noah','Ethan','Maxime','Antoine','Yanis','Kevin','Tom','Jules'];
+const BIOS=[
+  'Team pizza ananas, désolé pas désolé 🍍','Je ris à mes propres blagues 😅',
+  'Cherche quelqu\'un pour ouvrir les bocaux 🫙','Netflix, chill et débats sur le meilleur kebab 🌯',
+  'Randonnée le jour, canapé le reste du temps 🥾','Mon chat valide ou ça match pas 🐱',
+  'Fan de bad puns et de bons cafés ☕','Sportif du dimanche, expert du brunch 🥐',
+  'Je danse mal mais avec conviction 💃','Attention : je parle beaucoup de séries 📺',
+  'Capable de finir une raclette à moi tout seul 🧀','Je mets de l\'ananas partout, assume-le 🍍',
+  'PEL rempli, cœur à prendre 💸','Emoji-addict et fier de l\'être 😎'
+];
+const INTERESTS=['Voyages','Musique','Ciné','Cuisine','Sport','Jeux vidéo','Lecture','Photo','Danse','Café','Nature','Foot','Art','Astro','Tacos','Vinyles'];
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const rndInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+function buildDeck(){
+  deck=[]; idx=0; lastSwipe=null; refreshBtns();
+  const targetF=me.gender==='H';
+  const names=targetF?NAMES_F:NAMES_H, avs=targetF?AVATARS_F:AVATARS_H, used=new Set();
+  for(let i=0;i<14;i++){
+    let n; do{n=rnd(names)}while(used.has(n)&&used.size<names.length); used.add(n);
+    const p={name:n,age:rndInt(20,38),avatar:rnd(avs),bio:rnd(BIOS),
+      tags:[...new Set([rnd(INTERESTS),rnd(INTERESTS),rnd(INTERESTS)])]};
+    if(targetF) p.cup=rnd(['A','B','B','C','C','C','D','D','E','F','G']);
+    else p.hand=Math.round(rndInt(160,235)/10*2)/2;
+    deck.push(p);
+  }
+}
+
+/* ================= ALGO (pseudo-science) ================= */
+const CUP_IDX={A:1,B:2,C:3,D:4,E:5,F:6,G:7,'+':8};
+function compat(profile){
+  let hand,cupI;
+  if(me.gender==='H'){hand=me.hand; cupI=CUP_IDX[profile.cup];}
+  else{hand=profile.hand; cupI=CUP_IDX[me.cup];}
+  const ideal=17+cupI*0.8;                 // "Théorème de la paume comblée"
+  const ecart=Math.abs(hand-ideal);
+  let score=Math.round(100-ecart*11)+rndInt(-4,6);
+  return Math.max(28,Math.min(99,score));
+}
+function scoreClass(s){return s>=80?'s-hi':s>=55?'s-mid':'s-lo';}
+function scoreMsg(s){
+  if(s>=90)return'La main et le bonnet vivaient une histoire d\'amour sans le savoir. 🥹';
+  if(s>=80)return'Ajustement quasi parfait, on frôle la théorie du grand tout. ✨';
+  if(s>=65)return'Belle harmonie morphologique, ça promet de bons câlins. 🤗';
+  if(s>=50)return'Compatible, avec un petit effort d\'adaptation. 💪';
+  if(s>=40)return'Ça peut le faire, mais faudra communiquer. 🗣️';
+  return'Nos calculs sont formels : c\'est… courageux. 😬';
+}
+
+/* ================= DECK ================= */
+function renderDeck(){
+  const wrap=document.getElementById('deck-wrap'); wrap.innerHTML='';
+  if(idx>=deck.length){
+    wrap.innerHTML='<div class="empty"><div style="font-size:64px">🫥</div>'+
+      '<div style="font-weight:800;color:var(--ink)">Plus personne à l\'horizon !</div>'+
+      '<div>Tu as fait le tour du quartier.</div>'+
+      '<button class="btn btn-primary" style="max-width:220px;margin-top:8px" onclick="resetDeck()">Rebrasser les cartes 🔄</button></div>';
+    return;
+  }
+  for(let i=Math.min(idx+1,deck.length-1);i>=idx;i--){
+    const p=deck[i],card=document.createElement('div'); card.className='card';
+    const morpho=p.cup?('Bonnet '+p.cup):(p.hand+' cm de main');
+    card.innerHTML=
+      '<div class="photo">'+p.avatar+
+        '<div class="badge like">LIKE</div><div class="badge nope">NOPE</div><div class="badge star">SUPER ⭐</div></div>'+
+      '<div class="info"><div class="nm">'+p.name+' <small>'+p.age+' ans</small></div>'+
+      '<div class="chips"><span class="chip">📐 '+morpho+'</span>'+
+        p.tags.map(t=>'<span class="chip">'+t+'</span>').join('')+'</div>'+
+      '<div class="bio">'+p.bio+'</div></div>';
+    if(i===idx){card.style.zIndex=5; enableDrag(card);}
+    else{card.style.transform='scale(.95) translateY(10px)'; card.style.zIndex=4;}
+    wrap.appendChild(card);
+  }
+}
+function enableDrag(card){
+  let sx=0,dx=0,drag=false;
+  const like=card.querySelector('.badge.like'),nope=card.querySelector('.badge.nope');
+  const down=e=>{drag=true;card.style.transition='none';sx=(e.touches?e.touches[0]:e).clientX;};
+  const move=e=>{
+    if(!drag)return;
+    const cx=(e.touches?e.touches[0]:e).clientX; dx=cx-sx;
+    card.style.transform='translate('+dx+'px,'+(Math.abs(dx)/12)+'px) rotate('+dx/18+'deg)';
+    like.style.opacity=Math.max(0,dx/90); nope.style.opacity=Math.max(0,-dx/90);
+  };
+  const up=()=>{
+    if(!drag)return; drag=false; card.style.transition='transform .35s ease, opacity .35s';
+    if(Math.abs(dx)>110){fly(card,dx>0);} else {card.style.transform='';like.style.opacity=0;nope.style.opacity=0;}
+    dx=0;
+  };
+  card.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+  card.addEventListener('touchstart',down,{passive:true}); card.addEventListener('touchmove',move,{passive:true}); card.addEventListener('touchend',up);
+}
+function fly(card,liked,sup){
+  card.style.transform='translate('+(liked?600:-600)+'px,60px) rotate('+(liked?45:-45)+'deg)'; card.style.opacity=0;
+  const p=deck[idx];
+  blip(liked?520:200,.08,liked?'sine':'sawtooth'); buzz(liked?20:12);
+  lastSwipe={idx,liked,card:null}; refreshBtns();
+  setTimeout(()=>{ idx++; renderDeck(); refreshBtns(); if(liked) maybeMatch(p,sup); },220);
+}
+function btnSwipe(liked){
+  if(idx>=deck.length)return;
+  const top=document.querySelector('#deck-wrap .card:last-child');
+  if(top){top.style.transition='transform .35s ease, opacity .35s'; fly(top,liked);}
+}
+function superLike(){
+  if(idx>=deck.length)return;
+  const top=document.querySelector('#deck-wrap .card:last-child');
+  if(top){const s=top.querySelector('.badge.star'); if(s)s.style.opacity=1; top.style.transition='transform .4s ease, opacity .4s'; blip(880,.12,'triangle'); fly(top,true,true);}
+}
+function rewind(){
+  if(!lastSwipe||idx===0)return;
+  idx=lastSwipe.idx; lastSwipe=null; blip(440,.06,'triangle'); buzz(10); renderDeck(); refreshBtns();
+}
+function refreshBtns(){ document.getElementById('rewindBtn').disabled=!lastSwipe; }
+
+/* ================= MATCH ================= */
+function maybeMatch(p,sup){
+  const s=compat(p);
+  if(sup || Math.random()*100 < s-8){
+    registerMatch(p,s); showMatch(p,s,false);
+  }
+}
+function registerMatch(p,s){
+  matches.unshift({name:p.name,avatar:p.avatar,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
+  if(matches.length>50)matches.pop();
+  saveMatches(); updateMatchCount();
+}
+function updateMatchCount(){
+  const b=document.getElementById('mcount');
+  if(matches.length){b.textContent=matches.length; b.classList.remove('hidden');} else b.classList.add('hidden');
+}
+function showMatch(p,score,preview){
+  const el=document.getElementById('match');
+  document.getElementById('matchfaces').textContent=me.avatar+' '+p.avatar;
+  const sn=document.getElementById('matchscore'); sn.textContent=score+'%'; sn.className='scorenum '+scoreClass(score);
+  document.getElementById('matchmsg').textContent=scoreMsg(score);
+  el.querySelector('h1').textContent=preview?'Analyse 📊':'C\'est un MATCH !';
+  el.classList.add('show');
+  if(!preview){chime(); buzz([30,40,30]); confetti();}
+}
+function closeMatch(){document.getElementById('match').classList.remove('show'); blip(600,.05);}
+function confetti(){
+  const em=['💗','💘','✨','🎉','💞','🖐️'],host=document.getElementById('match');
+  for(let i=0;i<26;i++){
+    const c=document.createElement('div'); c.className='confetti'; c.textContent=rnd(em);
+    c.style.left=Math.random()*100+'%'; c.style.animationDuration=(1.6+Math.random()*1.4)+'s';
+    c.style.animationDelay=Math.random()*0.4+'s'; host.appendChild(c);
+    setTimeout(()=>c.remove(),3200);
+  }
+}
+
+/* ================= MATCHS SCREEN ================= */
+function openMatches(){
+  const l=document.getElementById('mlist'); l.innerHTML='';
+  if(!matches.length){
+    l.innerHTML='<div class="empty" style="height:70%"><div style="font-size:60px">💔</div><div>Pas encore de match…<br>Swipe un peu ! 👉</div></div>';
+  }else{
+    matches.forEach(m=>{
+      const d=document.createElement('div'); d.className='mrow';
+      d.innerHTML='<div class="av">'+m.avatar+'</div><div class="mid"><b>'+m.name+'</b><div>📐 '+m.morpho+'</div></div>'+
+        '<div class="sc '+scoreClass(m.score)+'" style="color:'+(m.score>=80?'var(--ok)':m.score>=55?'#e0a800':'var(--bad)')+'">'+m.score+'%</div>';
+      l.appendChild(d);
+    });
+  }
+  blip(660,.05); go('matches');
+}
+
+/* ================= RESET ================= */
+function resetDeck(){buildDeck(); renderDeck(); refreshBtns();}
+function resetAll(){
+  if(confirm('Recommencer depuis le début ? (ton profil et tes matchs seront effacés)')){
+    try{localStorage.removeItem(SAVE_KEY);localStorage.removeItem(M_KEY);}catch(e){}
+    location.reload();
+  }
+}
+
+/* ================= INIT ================= */
+loadState(); updateHand();
+</script>
+</body>
+</html>
