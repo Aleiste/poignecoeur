@@ -127,7 +127,7 @@
   .mrow .sc{font-weight:900;font-size:18px}
 
   #match{position:absolute;inset:0;background:linear-gradient(160deg,rgba(232,67,147,.96),rgba(108,92,231,.96));
-    display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:26px;z-index:20}
+    display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:26px;z-index:30}
   #match.show{display:flex;animation:fade .3s}
   #match h1{font-size:42px;font-weight:900;text-shadow:0 4px 14px rgba(0,0,0,.2)}
   .matchfaces{font-size:70px;margin:10px 0}
@@ -172,6 +172,23 @@
   .mrow .ava{width:48px;height:48px;flex:0 0 auto}
   #chat-av .ava{width:34px;height:34px}
   .matchfaces .ava{width:82px;height:82px;margin:0 6px;vertical-align:middle;border:4px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+
+  /* fiche profil (full-body) */
+  #profile{position:absolute;inset:0;z-index:25;display:none;flex-direction:column;
+    background:linear-gradient(160deg,#fff,#fff2f9);animation:fade .3s}
+  #profile.show{display:flex}
+  .pclose{position:absolute;top:14px;right:14px;z-index:3;width:40px;height:40px;border-radius:50%;
+    border:0;background:rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.15);font-size:18px;cursor:pointer}
+  .pscroll{flex:1;overflow-y:auto;padding:18px 18px 4px;display:flex;flex-direction:column;align-items:center}
+  .pimg{height:56vh;max-height:520px;aspect-ratio:2/5;border-radius:20px;background-repeat:no-repeat;
+    background-size:500% 400%;box-shadow:var(--shadow);flex:none}
+  .pinfo{width:100%;margin-top:16px}
+  .pname{font-size:26px;font-weight:900}
+  .pname small{font-weight:600;color:var(--muted);font-size:17px}
+  .pinfo .chip{background:#fff0f7;color:var(--pink-d)}
+  .pinfo .chip.morpho{background:var(--pink);color:#fff}
+  .pbio{color:var(--muted);font-size:15px;line-height:1.45;margin-top:6px}
+  .pactions{display:flex;justify-content:center;gap:24px;padding:12px 0 16px}
 
   .hidden{display:none!important}
 </style>
@@ -327,6 +344,24 @@
     <button class="btn btn-primary" onclick="closeMatch()">Continuer à swiper 🔥</button>
   </div>
 
+  <!-- FICHE PROFIL (full-body) -->
+  <div id="profile">
+    <button class="pclose" onclick="closeProfile()">✕</button>
+    <div class="pscroll">
+      <div class="pimg" id="p-img"></div>
+      <div class="pinfo">
+        <div class="pname" id="p-name"></div>
+        <div class="chips" id="p-chips"></div>
+        <div class="pbio" id="p-bio"></div>
+      </div>
+    </div>
+    <div class="pactions">
+      <button class="circle no" onclick="profileSwipe(false)">✖️</button>
+      <button class="circle info" onclick="profileScore()" title="Score">📊</button>
+      <button class="circle yes" onclick="profileSwipe(true)">❤️</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
 </div>
@@ -441,9 +476,11 @@ function submitOnb3(){
 }
 
 /* ================= AVATARS PHOTO (sprite 5x4) ================= */
-function sheetUrl(g){return "assets/avatars/planche-"+(g==='H'?'hommes':'femmes')+"-20.png";}
-function avaStyle(g,i){var c=i%5,r=Math.floor(i/5);
-  return "background-image:url('"+sheetUrl(g)+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%";}
+function sheetUrl(g,full){var s=(g==='H'?'hommes':'femmes');
+  return full ? "assets/avatars/full-body/planche-"+s+"-full-body-20.png"
+             : "assets/avatars/planche-"+s+"-20.png";}
+function avaStyle(g,i,full){var c=i%5,r=Math.floor(i/5);
+  return "background-image:url('"+sheetUrl(g,full)+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%";}
 function avaHTML(g,i,cls){return '<div class="ava '+(cls||'')+'" style="'+avaStyle(g,i)+'"></div>';}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
@@ -525,19 +562,22 @@ function renderDeck(){
   }
 }
 function enableDrag(card){
-  let sx=0,dx=0,drag=false;
+  let sx=0,dx=0,drag=false,moved=false;
   const like=card.querySelector('.badge.like'),nope=card.querySelector('.badge.nope');
-  const down=e=>{drag=true;card.style.transition='none';sx=(e.touches?e.touches[0]:e).clientX;};
+  const down=e=>{drag=true;moved=false;card.style.transition='none';sx=(e.touches?e.touches[0]:e).clientX;};
   const move=e=>{
     if(!drag)return;
     const cx=(e.touches?e.touches[0]:e).clientX; dx=cx-sx;
+    if(Math.abs(dx)>6)moved=true;
     card.style.transform='translate('+dx+'px,'+(Math.abs(dx)/12)+'px) rotate('+dx/18+'deg)';
     like.style.opacity=Math.max(0,dx/90); nope.style.opacity=Math.max(0,-dx/90);
   };
   const up=()=>{
     if(!drag)return; drag=false; card.style.transition='transform .35s ease, opacity .35s';
-    if(Math.abs(dx)>110){fly(card,dx>0);} else {card.style.transform='';like.style.opacity=0;nope.style.opacity=0;}
-    dx=0;
+    if(Math.abs(dx)>110){fly(card,dx>0);}
+    else {card.style.transform='';like.style.opacity=0;nope.style.opacity=0;
+      if(!moved) openProfile(deck[idx]);}      // tap = ouvrir la fiche profil
+    dx=0; moved=false;
   };
   card.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
   card.addEventListener('touchstart',down,{passive:true}); card.addEventListener('touchmove',move,{passive:true}); card.addEventListener('touchend',up);
@@ -565,6 +605,23 @@ function rewind(){
   idx=lastSwipe.idx; lastSwipe=null; blip(440,.06,'triangle'); buzz(10); renderDeck(); refreshBtns();
 }
 function refreshBtns(){ document.getElementById('rewindBtn').disabled=!lastSwipe; }
+
+/* ================= FICHE PROFIL (full-body) ================= */
+let profileP=null;
+function openProfile(p){
+  if(!p)return; profileP=p;
+  document.getElementById('p-img').setAttribute('style',avaStyle(p.ava.g,p.ava.i,true));
+  const morpho=p.cup?('Bonnet '+p.cup):(p.hand+' cm de main');
+  document.getElementById('p-name').innerHTML=p.name+' <small>'+p.age+' ans</small>';
+  document.getElementById('p-chips').innerHTML='<span class="chip morpho">📐 '+morpho+'</span>'+
+    p.tags.map(t=>'<span class="chip">'+t+'</span>').join('');
+  document.getElementById('p-bio').textContent=p.bio;
+  document.getElementById('profile').classList.add('show');
+  document.querySelector('.pscroll').scrollTop=0; blip(660,.05);
+}
+function closeProfile(){document.getElementById('profile').classList.remove('show');}
+function profileSwipe(liked){closeProfile(); btnSwipe(liked);}
+function profileScore(){ if(profileP) showMatch(profileP, compat(profileP), true); }
 
 /* ================= MATCH ================= */
 function maybeMatch(p,sup){
