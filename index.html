@@ -79,22 +79,24 @@
   .backlink{background:none;border:0;color:var(--muted);font-weight:700;cursor:pointer;font-size:14px;padding:8px}
 
   #deck-wrap{flex:1;position:relative;margin:8px 0}
-  .card{position:absolute;inset:0;background:var(--card);border-radius:26px;overflow:hidden;
-    box-shadow:var(--shadow);display:flex;flex-direction:column;
-    will-change:transform;touch-action:pan-y;cursor:grab}
-  .card .photo{flex:1;display:flex;align-items:center;justify-content:center;font-size:130px;
-    background:linear-gradient(160deg,#ffe0ef,#e9deff);position:relative}
+  .card{position:absolute;left:0;right:0;top:0;bottom:0;margin:auto;height:fit-content;
+    background:var(--card);border-radius:26px;overflow:hidden;
+    box-shadow:var(--shadow);will-change:transform;touch-action:pan-y;cursor:grab}
+  .card .photo{width:100%;aspect-ratio:4/5;flex:none;position:relative;
+    background-color:#f0e6ee;background-repeat:no-repeat;background-size:500% 400%}
   .badge{position:absolute;top:16px;padding:8px 14px;border-radius:30px;font-weight:900;font-size:26px;
     border:4px solid #fff;opacity:0;transform:rotate(-12deg);transition:opacity .1s}
   .badge.like{left:16px;color:var(--ok);border-color:var(--ok)}
   .badge.nope{right:16px;color:var(--bad);border-color:var(--bad);transform:rotate(12deg)}
   .badge.star{left:50%;top:40%;transform:translate(-50%,-50%) rotate(-8deg);color:var(--purple);border-color:var(--purple);font-size:22px}
-  .card .info{padding:16px 18px 20px}
-  .card .nm{font-size:24px;font-weight:900}
-  .card .nm small{font-weight:600;color:var(--muted);font-size:16px}
+  .card .info{position:absolute;left:0;right:0;bottom:0;padding:40px 18px 18px;color:#fff;
+    background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.4) 55%,transparent)}
+  .card .nm{font-size:24px;font-weight:900;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .card .nm small{font-weight:600;color:rgba(255,255,255,.85);font-size:16px}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{background:#fff0f7;color:var(--pink-d);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
-  .bio{color:var(--muted);font-size:14px;line-height:1.4}
+  .chip{background:rgba(255,255,255,.22);color:#fff;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;backdrop-filter:blur(2px)}
+  .chip.morpho{background:var(--pink);color:#fff}
+  .bio{color:rgba(255,255,255,.92);font-size:14px;line-height:1.4;text-shadow:0 1px 4px rgba(0,0,0,.4)}
 
   .actions{display:flex;justify-content:center;align-items:center;gap:14px;padding:6px 0 4px}
   .circle{width:60px;height:60px;border-radius:50%;border:0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.12);
@@ -160,6 +162,16 @@
     animation:toastIn .3s ease, toastOut .35s ease 2.5s forwards}
   @keyframes toastIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
   @keyframes toastOut{to{opacity:0;transform:translateY(-14px)}}
+
+  /* avatars photo (sprite 5x4) */
+  .ava{background-repeat:no-repeat;background-size:500% 400%;background-color:#eee;display:inline-block}
+  .ava.round{border-radius:50%}
+  #f-avatar{display:grid!important;grid-template-columns:repeat(5,1fr);gap:8px}
+  .pick{aspect-ratio:1;cursor:pointer;border:3px solid transparent;box-sizing:border-box}
+  .pick.sel{border-color:var(--pink);box-shadow:0 0 0 2px #fff inset}
+  .mrow .ava{width:48px;height:48px;flex:0 0 auto}
+  #chat-av .ava{width:34px;height:34px}
+  .matchfaces .ava{width:82px;height:82px;margin:0 6px;vertical-align:middle;border:4px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}
 
   .hidden{display:none!important}
 </style>
@@ -340,6 +352,7 @@ function loadState(){
   try{
     const p=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
     if(p&&p.name&&p.gender){me=p; document.getElementById('resumeBtn').classList.remove('hidden');}
+    if(me&&(typeof me.avatar!=='object'||me.avatar===null)) me.avatar={g:me.gender||'H',i:0};
     const m=JSON.parse(localStorage.getItem(M_KEY)||'[]'); if(Array.isArray(m))matches=m;
     matches.forEach((x,i)=>{if(!x.id)x.id='old-'+i+'-'+(x.when||i);});   // rétro-compat
     const c=JSON.parse(localStorage.getItem(C_KEY)||'{}'); if(c&&typeof c==='object')chats=c;
@@ -410,23 +423,29 @@ function submitOnb2(){
   buildAvatars(); blip(660,.05); go('onb3');
 }
 function buildAvatars(){
-  const list=me.gender==='H'?AVATARS_H:AVATARS_F;
-  const box=document.getElementById('f-avatar'); box.innerHTML='';
-  list.forEach((a,i)=>{
+  const g=me.gender, box=document.getElementById('f-avatar'); box.innerHTML='';
+  for(let i=0;i<20;i++){
     const d=document.createElement('div');
-    d.className='opt'; d.style.fontSize='30px'; d.style.minWidth='0'; d.style.flex='0 0 20%';
-    d.textContent=a; d.onclick=()=>{
-      box.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
-      d.classList.add('sel'); me.avatar=a; blip(680,.04);
+    d.className='ava round pick'; d.setAttribute('style',avaStyle(g,i));
+    d.onclick=()=>{
+      box.querySelectorAll('.pick').forEach(x=>x.classList.remove('sel'));
+      d.classList.add('sel'); me.avatar={g:g,i:i}; blip(680,.04);
     };
-    if(i===0){d.classList.add('sel'); me.avatar=a;}
+    if(i===0){d.classList.add('sel'); me.avatar={g:g,i:0};}
     box.appendChild(d);
-  });
+  }
 }
 function submitOnb3(){
   me.bio=document.getElementById('f-bio').value.trim();
   saveProfile(); buildDeck(); chime(); go('swipe'); renderDeck(); updateMatchCount();
 }
+
+/* ================= AVATARS PHOTO (sprite 5x4) ================= */
+function sheetUrl(g){return "assets/avatars/planche-"+(g==='H'?'hommes':'femmes')+"-20.png";}
+function avaStyle(g,i){var c=i%5,r=Math.floor(i/5);
+  return "background-image:url('"+sheetUrl(g)+"');background-size:500% 400%;background-position:"+(c*25)+"% "+(r*100/3).toFixed(2)+"%";}
+function avaHTML(g,i,cls){return '<div class="ava '+(cls||'')+'" style="'+avaStyle(g,i)+'"></div>';}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 /* ================= MOCK PROFILS ================= */
 const NAMES_F=['Camille','Léa','Manon','Chloé','Inès','Jade','Sarah','Emma','Louna','Zoé','Nina','Clara','Lucie','Anaïs','Maëva','Océane','Alice'];
@@ -446,11 +465,12 @@ const rndInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 
 function buildDeck(){
   deck=[]; idx=0; lastSwipe=null; refreshBtns();
-  const targetF=me.gender==='H';
-  const names=targetF?NAMES_F:NAMES_H, avs=targetF?AVATARS_F:AVATARS_H, used=new Set();
+  const targetF=me.gender==='H', targetG=targetF?'F':'H';
+  const names=targetF?NAMES_F:NAMES_H, used=new Set();
+  const pics=shuffle([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]);
   for(let i=0;i<14;i++){
     let n; do{n=rnd(names)}while(used.has(n)&&used.size<names.length); used.add(n);
-    const p={name:n,age:rndInt(20,38),avatar:rnd(avs),bio:rnd(BIOS),
+    const p={name:n,age:rndInt(20,38),ava:{g:targetG,i:pics[i]},bio:rnd(BIOS),
       tags:[...new Set([rnd(INTERESTS),rnd(INTERESTS),rnd(INTERESTS)])]};
     if(targetF) p.cup=rnd(['A','B','B','C','C','C','D','D','E','F','G']);
     else p.hand=Math.round(rndInt(160,235)/10*2)/2;
@@ -493,10 +513,10 @@ function renderDeck(){
     const p=deck[i],card=document.createElement('div'); card.className='card';
     const morpho=p.cup?('Bonnet '+p.cup):(p.hand+' cm de main');
     card.innerHTML=
-      '<div class="photo">'+p.avatar+
+      '<div class="photo" style="'+avaStyle(p.ava.g,p.ava.i)+'">'+
         '<div class="badge like">LIKE</div><div class="badge nope">NOPE</div><div class="badge star">SUPER ⭐</div></div>'+
       '<div class="info"><div class="nm">'+p.name+' <small>'+p.age+' ans</small></div>'+
-      '<div class="chips"><span class="chip">📐 '+morpho+'</span>'+
+      '<div class="chips"><span class="chip morpho">📐 '+morpho+'</span>'+
         p.tags.map(t=>'<span class="chip">'+t+'</span>').join('')+'</div>'+
       '<div class="bio">'+p.bio+'</div></div>';
     if(i===idx){card.style.zIndex=5; enableDrag(card);}
@@ -555,7 +575,7 @@ function maybeMatch(p,sup){
 }
 function registerMatch(p,s){
   const id=Date.now()+'-'+Math.floor(Math.random()*1000);
-  matches.unshift({id:id,name:p.name,avatar:p.avatar,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
+  matches.unshift({id:id,name:p.name,ava:p.ava,score:s,morpho:p.cup?('Bonnet '+p.cup):(p.hand+' cm'),when:Date.now()});
   if(matches.length>50)matches.pop();
   stats.matches++; stats.best=Math.max(stats.best,s); saveStats();
   saveMatches(); updateMatchCount(); checkBadges();
@@ -566,7 +586,7 @@ function updateMatchCount(){
 }
 function showMatch(p,score,preview){
   const el=document.getElementById('match');
-  document.getElementById('matchfaces').textContent=me.avatar+' '+p.avatar;
+  document.getElementById('matchfaces').innerHTML=avaHTML(me.avatar.g,me.avatar.i,'round')+avaHTML(p.ava.g,p.ava.i,'round');
   const sn=document.getElementById('matchscore'); sn.className='scorenum '+scoreClass(score);
   animateScore(sn,score);
   document.getElementById('matchmsg').textContent=scoreMsg(score);
@@ -594,7 +614,8 @@ function openMatches(){
     matches.forEach(m=>{
       const d=document.createElement('div'); d.className='mrow';
       const nb=(chats[m.id]&&chats[m.id].length)?' 💬':'';
-      d.innerHTML='<div class="av">'+m.avatar+'</div><div class="mid"><b>'+m.name+'</b><div>📐 '+m.morpho+nb+'</div></div>'+
+      const a=m.ava||{g:'F',i:0};
+      d.innerHTML=avaHTML(a.g,a.i,'round')+'<div class="mid"><b>'+m.name+'</b><div>📐 '+m.morpho+nb+'</div></div>'+
         '<div class="sc" style="color:'+(m.score>=80?'var(--ok)':m.score>=55?'#e0a800':'var(--bad)')+'">'+m.score+'%</div>'+
         '<div class="go">›</div>';
       d.onclick=()=>openChat(m.id);
@@ -629,7 +650,8 @@ function openChat(id){
   const m=matches.find(x=>x.id===id); if(!m)return;
   currentChat=id;
   document.getElementById('chat-name').textContent=m.name;
-  document.getElementById('chat-av').textContent=m.avatar;
+  const a=m.ava||{g:'F',i:0};
+  document.getElementById('chat-av').innerHTML=avaHTML(a.g,a.i,'round');
   if(!chats[id]||!chats[id].length){chats[id]=[]; pushMsg(id,false,opener(m.score)); saveChats();}
   renderChat(); blip(660,.05); go('chat');
   setTimeout(()=>document.getElementById('cinput').focus(),150);

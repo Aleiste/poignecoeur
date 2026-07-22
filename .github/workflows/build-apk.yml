@@ -28,6 +28,7 @@ jobs:
         run: |
           mkdir -p android/app/src/main/assets
           cp index.html android/app/src/main/assets/index.html
+          cp -r assets android/app/src/main/assets/assets
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
